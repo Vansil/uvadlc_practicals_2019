@@ -86,7 +86,10 @@ def train():
   n_test = dataset['test'].images.shape[0]
 
   # Initialise VGG network
-  net = ConvNet(n_channels, n_classes)
+  dev = 'cuda' if torch.cuda.is_available() else 'cpu'
+  device = torch.device(dev)
+  print("Device: "+dev)
+  net = ConvNet(n_channels, n_classes).to(device)
   loss_fn = F.cross_entropy
   print("Network architecture:\n\t{}\nLoss module:\n\t{}".format(str(net), str(loss_fn)))
 
