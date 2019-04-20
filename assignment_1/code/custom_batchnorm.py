@@ -1,6 +1,7 @@
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.distributions import Normal
 
 """
 The modules/function here implement custom versions of batch normalization in PyTorch.
@@ -34,36 +35,29 @@ class CustomBatchNormAutograd(nn.Module):
     """
     super(CustomBatchNormAutograd, self).__init__()
 
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
+    self.eps = eps
+
+    # For random gamma init, use: #nn.Parameter(Normal(0,.0001).sample((n_neurons,)))
+    self.gamma = nn.Parameter(torch.ones(n_neurons))
+    self.beta = nn.Parameter(torch.zeros(n_neurons))
+
 
   def forward(self, input):
     """
-    Compute the batch normalization
+    Compute the batch normalization, batch statistics are also used at evaluation time
     
     Args:
       input: input tensor of shape (n_batch, n_neurons)
     Returns:
       out: batch-normalized tensor
-    
-    TODO:
-      Check for the correctness of the shape of the input tensor.
-      Implement batch normalization forward pass as given in the assignment.
-      For the case that you make use of torch.var be aware that the flag unbiased=False should be set.
     """
 
-    ########################
-    # PUT YOUR CODE HERE  #
-    #######################
-    raise NotImplementedError
-    ########################
-    # END OF YOUR CODE    #
-    #######################
+    assert (input.shape[1] == self.gamma.shape[0]), "Unexpected input dimensions"
+
+    sample_mean = input.mean(dim=0)
+    sample_var = input.var(unbiased=False, dim=0)
+
+    out = self.gamma * (input - sample_mean) / torch.sqrt(sample_var + self.eps) + self.beta
 
     return out
 
@@ -114,7 +108,18 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    input = input.double()
+    gamma = gamma.double()
+    beta = beta.double()
+
+    input_mean_subtr = (input - input.mean(dim=0)) # mean subtracted input
+    sample_std = torch.sqrt(input.var(unbiased=False, dim=0) + eps) # sample std including epsilon
+    input_norm = input_mean_subtr / sample_std # normalised input
+    
+    out = gamma * input_norm + beta
+
+    ctx.save_for_backward(input_mean_subtr, sample_std, input_norm, gamma, beta)
+    ctx.eps = eps
     ########################
     # END OF YOUR CODE    #
     #######################
@@ -142,7 +147,45 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    grad_output = grad_output.double()
+
+    input_mean_subtr, sample_std, input_norm, gamma, beta = ctx.saved_tensors
+    eps = ctx.eps
+
+    grad_beta = grad_output.sum(dim=0)
+    grad_gamma = torch.einsum('bd,bd->d', grad_output, input_norm)
+
+
+    B,D = input_mean_subtr.shape
+    x_hat = input_mean_subtr / sample_std
+    grad_xhat = torch.mul(grad_output, gamma)
+    grad_input = 1/B * 1/sample_std * \
+      (B*grad_xhat - torch.sum(grad_xhat, dim=0) - x_hat * torch.sum(grad_xhat * x_hat, dim=0))
+
+
+
+
+    # compute input gradient per element
+    # onehot = lambda l, i: torch.zeros(l).scatter_(0,torch.LongTensor([i]),torch.Tensor([1])).double() # one-hot vector of length l and 1 at index i
+    # B,D = input_mean_subtr.shape # number of datapoints in batch (B) and dimensionality of datapoint (D)
+    # grad_input = torch.DoubleTensor(B,D)
+    # for r in range(B):
+    #   for j in range(D):
+    #     # HENK = (onehot(B,r)-1/B)/sample_std[j]
+    #     # JAPIE = input_norm[:,j]/B/torch.pow(sample_std[j],3)
+
+    #     # SJAAK = input_norm[:,j]
+    #     # PANDA = onehot(B,r)-1/B
+    #     # print(SJAAK.type(), PANDA.type())
+    #     # BERT = torch.einsum('b,b', SJAAK.double(), PANDA.double())
+    #     # KAREL = HENK.double() - JAPIE.double() * BERT
+    #     grad_input[r,j] = torch.einsum('b,b',
+    #       grad_output[:,j] * gamma[j],
+    #       (onehot(B,r)-1/B)/sample_std[j] - input_norm[:,j]/B/torch.pow(sample_std[j],3) * 
+    #         torch.einsum('b,b', input_norm[:,j], onehot(B,r)-1/B))
+
+    #       # (onehot(B,r)-1/B)/sample_std[j] - input_norm[:,j]/B/torch.pow(sample_std[j],3) * torch.einsum('b,b', input_norm[:,j], onehot(B,r)-1/B)
+
     ########################
     # END OF YOUR CODE    #
     #######################
@@ -180,7 +223,10 @@ class CustomBatchNormManualModule(nn.Module):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    self.eps = eps
+
+    self.gamma = nn.Parameter(torch.ones(n_neurons).double())
+    self.beta = nn.Parameter(torch.zeros(n_neurons).double())
     ########################
     # END OF YOUR CODE    #
     #######################
@@ -203,7 +249,11 @@ class CustomBatchNormManualModule(nn.Module):
     ########################
     # PUT YOUR CODE HERE  #
     #######################
-    raise NotImplementedError
+    assert (input.shape[1] == self.gamma.shape[0]), "Unexpected input dimensions"
+    
+    fn = CustomBatchNormManualFunction()
+    out = fn.apply(input.double(), self.gamma, self.beta, self.eps)
+
     ########################
     # END OF YOUR CODE    #
     #######################
