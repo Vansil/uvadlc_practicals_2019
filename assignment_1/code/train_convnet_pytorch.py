@@ -131,8 +131,8 @@ def train():
     # Evaluation
     # TODO: eval on everything
     if iteration % eval_freq == 0:
-      x = torch.from_numpy(dataset['test'].images[:100])
-      y = torch.from_numpy(dataset['test'].labels[:100]).argmax(dim=1).long()
+      x = torch.from_numpy(dataset['test'].images[:100]).to(device)
+      y = torch.from_numpy(dataset['test'].labels[:100]).argmax(dim=1).long().to(device)
       prediction = net.forward(x)
       acc = accuracy(prediction, y)
       test_acc.append( (iteration, acc) )
