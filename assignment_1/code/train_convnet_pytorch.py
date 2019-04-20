@@ -107,8 +107,8 @@ def train():
 
     # Sample a mini-batch
     x, y = dataset['train'].next_batch(batch_size)
-    x = torch.from_numpy(x)
-    y = torch.from_numpy(y).argmax(dim=1).long()
+    x = torch.from_numpy(x).to(device)
+    y = torch.from_numpy(y).argmax(dim=1).long().to(device)
 
     # Forward propagation
     prediction = net.forward(x)
