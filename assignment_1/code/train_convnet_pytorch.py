@@ -67,6 +67,9 @@ def train():
   # Set the random seeds for reproducibility
   np.random.seed(42)
 
+  with open("jobs/status.txt","w") as f:
+    f.write("Start training\n")
+
   ## Prepare all functions
   output_dir    = FLAGS.output_dir
   if not os.path.isdir(output_dir):
@@ -129,14 +132,16 @@ def train():
     gradient_norms.append( (iteration, norm.reshape(-1)) )
 
     # Evaluation
-    # TODO: eval on everything
-    if iteration % eval_freq == 0:
-      x = torch.from_numpy(dataset['test'].images).to(device)
-      y = torch.from_numpy(dataset['test'].labels).argmax(dim=1).long().to(device)
-      prediction = net.forward(x)
-      acc = accuracy(prediction, y)
-      test_acc.append( (iteration, acc) )
-      print("Iteration: {}\t\tTest accuracy: {}".format(iteration, acc))
+    with torch.no_grad():
+      if iteration % eval_freq == 0:
+        x = torch.from_numpy(dataset['test'].images).to(device)
+        y = torch.from_numpy(dataset['test'].labels).argmax(dim=1).long().to(device)
+        prediction = net.forward(x)
+        acc = accuracy(prediction, y)
+        test_acc.append( (iteration, acc) )
+        print("Iteration: {}\t\tTest accuracy: {}".format(iteration, acc))
+        with open("jobs/status.txt","a") as f:
+          f.write("  Iter {}\t\tTest acc: {}\n".format(iteration,acc))
   
   # Save raw output
   now = datetime.datetime.now()
