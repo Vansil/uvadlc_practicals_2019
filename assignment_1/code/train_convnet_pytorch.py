@@ -65,7 +65,8 @@ def train():
 
   ### DO NOT CHANGE SEEDS!
   # Set the random seeds for reproducibility
-  np.random.seed(42)
+  # TAKEN OUT FOR EXPERIMENT
+  # np.random.seed(42)
 
   with open("jobs/status.txt","w") as f:
     f.write("Start training\n")
@@ -147,13 +148,15 @@ def train():
   now = datetime.datetime.now()
   time_stamp = "{}{}{}{}{}".format(now.year, now.month, now.day, now.hour, now.minute)
   net_name = "cnn"
+  if not os.path.isdir(os.path.join(output_dir, net_name, time_stamp)):
+    os.makedirs(os.path.join(output_dir, net_name, time_stamp))
   metrics = {"train_loss": train_loss,
              "gradient_norms": gradient_norms,
              "train_acc": train_acc,
              "test_acc": test_acc}
   raw_data = {"net": net,
               "metrics": metrics}
-  pickle.dump(raw_data, open(os.path.join(output_dir, net_name+"_raw_data_" + time_stamp), "wb"))
+  pickle.dump(raw_data, open(os.path.join(output_dir, net_name, time_stamp, "raw_data"), "wb"))
 
   # Save plots
   # Loss
@@ -165,7 +168,7 @@ def train():
         title='Batch training loss')
   ax.set_yscale('log')
   ax.grid()
-  fig.savefig(os.path.join(output_dir, net_name+"_loss_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(output_dir, net_name, time_stamp, "loss.png"))
   # gradient norm
   fig, ax = plt.subplots()
   iter = [i for (i,q) in gradient_norms]
@@ -174,7 +177,7 @@ def train():
   ax.set(xlabel='Iteration', ylabel='Norm',
         title='Gradient norm')
   ax.grid()
-  fig.savefig(os.path.join(output_dir, net_name+"_gradient_norm_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(output_dir, net_name, time_stamp, "gradient_norm.png"))
   # accuracies
   fig, ax = plt.subplots()
   iter = [i for (i,q) in train_acc]
@@ -187,7 +190,7 @@ def train():
         title='Train and test accuracy')
   ax.legend()
   ax.grid()
-  fig.savefig(os.path.join(output_dir, net_name+"_accuracy_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(output_dir, net_name, time_stamp, "accuracy.png"))
 
 def print_flags():
   """

@@ -17,6 +17,8 @@ import pickle
 import datetime
 import matplotlib
 import matplotlib.pyplot as plt
+import torch
+import types
 
 # Default constants
 DNN_HIDDEN_UNITS_DEFAULT = '100'
@@ -25,6 +27,7 @@ MAX_STEPS_DEFAULT = 1500
 BATCH_SIZE_DEFAULT = 200
 EVAL_FREQ_DEFAULT = 100
 OUTPUT_DIR_DEFAULT = './output'
+NO_WRITE_DEFAULT = 0
 
 # Directory in which cifar data is saved
 DATA_DIR_DEFAULT = './cifar10/cifar-10-batches-py'
@@ -46,8 +49,8 @@ def accuracy(predictions, targets):
               i.e. the average correct predictions over the whole batch
   """
 
-  correct_prediction = predictions.argmax(dim=1) - targets.argmax(dim=1) == 0
-  accuracy = correct_prediction.sum() / len(correct_prediction)
+  correct_prediction = predictions.argmax(dim=1) - targets == 0
+  accuracy = correct_prediction.sum().float() / float(len(correct_prediction))
 
   return accuracy
 
@@ -80,6 +83,7 @@ def train():
   batch_size    = FLAGS.batch_size
   eval_freq     = FLAGS.eval_freq
   data_dir      = FLAGS.data_dir
+  no_write      = FLAGS.no_write == 1
 
   # Obtain dataset
   dataset = cifar10_utils.get_cifar10(data_dir)
@@ -88,7 +92,10 @@ def train():
   n_test = dataset['test'].images.shape[0]
 
   # Initialise MLP
-  net = MLP(n_inputs, dnn_hidden_units, n_classes)
+  dev = 'cuda' if torch.cuda.is_available() else 'cpu'
+  device = torch.device(dev)
+  print("Device: "+dev)
+  net = MLP(n_inputs, dnn_hidden_units, n_classes).to(device)
   loss_fn = F.cross_entropy
   print("Network architecture:\n\t{}\nLoss module:\n\t{}".format(str(net), str(loss_fn)))
 
@@ -106,15 +113,15 @@ def train():
 
     # Sample a mini-batch
     x, y = dataset['train'].next_batch(batch_size)
-    x = torch.from_numpy(x.reshape((batch_size, -1)))
-    y = torch.from_numpy(y)
+    x = torch.from_numpy(x.reshape((batch_size, -1))).to(device)
+    y = torch.from_numpy(y).argmax(dim=1).long().to(device)
 
     # Forward propagation
     prediction = net.forward(x)
     loss = loss_fn(prediction, y)
     acc = accuracy(prediction, y)
-    train_acc.append( (iteration, acc) )
-    train_loss.append( (iteration, loss) )
+    train_acc.append( (iteration, acc.tolist()) )
+    train_loss.append( (iteration, loss.tolist()) )
 
     # Backprop
     optimizer.zero_grad()
@@ -122,34 +129,38 @@ def train():
 
     # Weight update in linear modules
     optimizer.step()
-    norm = 0
-    for params in net.parameters:
-      if len(params.shape) == 1:
-        equation = 'ij,ij'
-      else:
-        equation = 'i,i'
-      norm += np.einsum(equation, params, params)
-    gradient_norms.append( (iteration, norm.reshape(-1)) )
+    with torch.no_grad():
+      norm = 0
+      for params in net.parameters():
+        norm += params.reshape(-1).pow(2).sum()
+      gradient_norms.append( (iteration, norm.reshape(-1).tolist()) )
 
     # Evaluation
-    if iteration % eval_freq == 0:
-      x = torch.from_numpy(dataset['test'].images.reshape((n_test,-1)))
-      y = torch.from_numpy(dataset['test'].labels)
-      prediction = net.forward(x)
-      acc = accuracy(prediction, y)
-      test_acc.append( (iteration, acc) )
-      print("Iteration: {}\t\tTest accuracy: {}".format(iteration, acc))
+      if iteration % eval_freq == 0:
+        x = torch.from_numpy(dataset['test'].images.reshape((n_test,-1))).to(device)
+        y = torch.from_numpy(dataset['test'].labels).argmax(dim=1).long().to(device)
+        prediction = net.forward(x)
+        acc = accuracy(prediction, y)
+        test_acc.append( (iteration, acc.tolist()) )
+        print("Iteration: {}\t\tTest accuracy: {}".format(iteration, acc))
   
-  # Save raw output
-  now = datetime.datetime.now()
-  time_stamp = "{}{}{}{}{}".format(now.year, now.month, now.day, now.hour, now.minute)
+  # Save or return raw output
   metrics = {"train_loss": train_loss,
              "gradient_norms": gradient_norms,
              "train_acc": train_acc,
              "test_acc": test_acc}
   raw_data = {"net": net,
               "metrics": metrics}
-  pickle.dump(raw_data, open(os.path.join(output_dir, "torch_raw_data_" + time_stamp), "wb"))
+  if no_write:
+    return raw_data
+  # Save
+  now = datetime.datetime.now()
+  time_stamp = "{}{}{}{}{}".format(now.year, now.month, now.day, now.hour, now.minute)
+  net_name = "torchnet"
+  out_dir = os.path.join(output_dir, net_name, time_stamp)
+  if not os.path.isdir(out_dir):
+    os.makedirs(out_dir)
+  pickle.dump(raw_data, open(os.path.join(out_dir, "torch_raw_data"), "wb"))
 
   # Save plots
   # Loss
@@ -161,7 +172,7 @@ def train():
         title='Batch training loss')
   ax.set_yscale('log')
   ax.grid()
-  fig.savefig(os.path.join(output_dir, "torch_loss_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(out_dir, "torch_loss.png"))
   # gradient norm
   fig, ax = plt.subplots()
   iter = [i for (i,q) in gradient_norms]
@@ -170,7 +181,7 @@ def train():
   ax.set(xlabel='Iteration', ylabel='Norm',
         title='Gradient norm')
   ax.grid()
-  fig.savefig(os.path.join(output_dir, "torch_gradient_norm_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(out_dir, "torch_gradient_norm.png"))
   # accuracies
   fig, ax = plt.subplots()
   iter = [i for (i,q) in train_acc]
@@ -183,7 +194,11 @@ def train():
         title='Train and test accuracy')
   ax.legend()
   ax.grid()
-  fig.savefig(os.path.join(output_dir, "torch_accuracy_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(out_dir, "torch_accuracy.png"))
+
+  return raw_data
+
+
 
 def print_flags():
   """
@@ -191,6 +206,21 @@ def print_flags():
   """
   for key, value in vars(FLAGS).items():
     print(key + ' : ' + str(value))
+
+def experiment(hidden_units, lr):
+  '''conduct experiment, return metrics and net'''
+  FLAGS.dnn_hidden_units = hidden_units
+  FLAGS.learning_rate = lr
+  FLAGS.max_steps = MAX_STEPS_DEFAULT
+  FLAGS.batch_size = BATCH_SIZE_DEFAULT
+  FLAGS.eval_freq = EVAL_FREQ_DEFAULT
+  FLAGS.data_dir = DATA_DIR_DEFAULT
+  FLAGS.output_dir = OUTPUT_DIR_DEFAULT
+  FLAGS.no_write = 1
+
+  print_flags()
+  return train()
+
 
 def main():
   """
@@ -205,6 +235,7 @@ def main():
   # Run the training operation
   train()
 
+FLAGS = types.SimpleNamespace()
 if __name__ == '__main__':
   # Command line arguments
   parser = argparse.ArgumentParser()
@@ -222,6 +253,8 @@ if __name__ == '__main__':
                       help='Directory for storing input data')
   parser.add_argument('--output_dir', type = str, default = OUTPUT_DIR_DEFAULT,
                       help='Directory for saving output data')
+  parser.add_argument('--no_write', type = str, default = NO_WRITE_DEFAULT,
+                      help='Set to 1 to suppress output files')
   FLAGS, unparsed = parser.parse_known_args()
 
   main()
