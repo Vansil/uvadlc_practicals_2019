@@ -65,8 +65,7 @@ def train():
 
   ### DO NOT CHANGE SEEDS!
   # Set the random seeds for reproducibility
-  # TAKEN OUT FOR EXPERIMENT
-  # np.random.seed(42)
+  np.random.seed(42)
 
   with open("jobs/status.txt","w") as f:
     f.write("Start training\n")
