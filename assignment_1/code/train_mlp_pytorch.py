@@ -149,7 +149,7 @@ def train():
              "gradient_norms": gradient_norms,
              "train_acc": train_acc,
              "test_acc": test_acc}
-  raw_data = {"net": net,
+  raw_data = {"net": net.to(torch.device('cpu')),
               "metrics": metrics}
   if no_write:
     return raw_data
