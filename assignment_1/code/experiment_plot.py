@@ -23,14 +23,16 @@ with open(fname_accuracies) as f:
             accuracies.append(float(row[2]))
 # make figure
 acc = np.array(accuracies)
+maxind = np.argmax(acc)
+print("Best accuracy: {}".format(max(acc)))
 acc = (acc - min(acc)) / np.var(acc) * 50 + 10
-print(acc,nlayers,lrs)
 fig, ax = plt.subplots()
-ax.scatter(nlayers,lrs,s=acc,facecolors='none',edgecolors='r')
+ax.scatter(nlayers[maxind],lrs[maxind],s=acc[maxind],facecolors='b',edgecolors='b',label='Best result')
+ax.scatter(nlayers,lrs,s=acc,facecolors='none',edgecolors='r',label='Other result')
 ax.set(xlabel='Number of layers', ylabel='Learning rate',
     title='Test accuracy', yscale='log')
 plt.ylim(min(lrs),max(lrs))
-ax.legend()
+plt.legend()
 ax.grid()
 fig.savefig(os.path.join('output', "experiment_acc.png"))
 
@@ -78,3 +80,5 @@ ax.set(xlabel='Iteration', ylabel='Accuracy',
 ax.legend()
 ax.grid()
 fig.savefig(os.path.join(out_dir, "exp_best_accuracy.png"))
+
+print("hack successful")
