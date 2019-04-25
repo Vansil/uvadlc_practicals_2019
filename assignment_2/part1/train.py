@@ -79,6 +79,9 @@ def train(config):
         for p in model.parameters():
             print(p)
 
+        print(batch_inputs)
+        
+
         # forward pass
         logits = model.forward(batch_inputs)
 
