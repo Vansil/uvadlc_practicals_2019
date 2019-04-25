@@ -92,7 +92,7 @@ def train(config):
         optimizer.step()
 
         # Compute metrics
-        accuracy = (logits.cpu().argmax(dim=1) == batch_targets).numpy().mean()
+        accuracy = (logits.cpu().argmax(dim=1) == batch_targets.cpu()).numpy().mean()
 
         # Just for time measurement
         t2 = time.time()
