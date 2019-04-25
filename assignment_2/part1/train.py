@@ -69,7 +69,8 @@ def train(config):
 
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         # Transform input to RNN input format (sequence, batch, input)
-        batch_inputs = batch_inputs.t().unsqueeze(2)
+        batch_inputs = batch_inputs.t().unsqueeze(2).to(device)
+        batch_targets = batch_targets.to(device)
 
         # Only for time measurement of step through network
         t1 = time.time()
