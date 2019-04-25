@@ -75,13 +75,6 @@ def train(config):
         # Only for time measurement of step through network
         t1 = time.time()
 
-
-        for p in model.parameters():
-            print(p)
-
-        print(batch_inputs)
-        
-
         # forward pass
         logits = model.forward(batch_inputs)
 

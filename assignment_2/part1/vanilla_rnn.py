@@ -54,6 +54,8 @@ class VanillaRNN(nn.Module):
         # shape output p: (batch size, class)
         
         for i in range(x.shape[0]):
+            print(x[i])
+            print(self.state)
             self.state = torch.tanh(x[i] @ self.W_hx + self.state @ self.W_hh + self.b_h)
         
         out = self.state @ self.W_ph + self.b_p
