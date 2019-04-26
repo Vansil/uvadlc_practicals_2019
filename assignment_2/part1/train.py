@@ -104,15 +104,15 @@ def train(config):
 
         if step % 10 == 0:
 
-            message = "[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
+            message = "[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, " + \
                   "Accuracy = {:.2f}, Loss = {:.3f}".format(
                     datetime.now().strftime("%Y-%m-%d %H:%M"), step,
                     config.train_steps, config.batch_size, examples_per_second,
                     accuracy, loss)
-            print(message)
+            print()
             if config.log_path != "":
                 with open(config.log_path, "a") as f:
-                    f.write(message)
+                    f.write("\n\n\nEXPERIMENT: input length {}\n".format(input_length))
             accuracies.append(np.mean(accuracies_last10))
             losses.append(np.mean(losses_last10))
             accuracies_last10 = []
