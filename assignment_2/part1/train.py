@@ -155,8 +155,8 @@ if __name__ == "__main__":
     else:
         # Conduct experiment
         # Vary input length and evaluate accuracy and loss over time
-        file_out = 'output/experiment_results.txt'
-
+        file_out = 'output/experiment_results_{}.txt'.format(config.model_type)
+        
         with open(file_out, "a") as f:
             f.write("len;losses;accuracies")
 
@@ -171,7 +171,7 @@ if __name__ == "__main__":
             losses, accuracies = train(config)
             # Write to output
             with open(file_out, "a") as f:
-                f.write(str(input_length) + ";" + ",".join([str(l) for l in losses]) + ";" + ",".join([str(a) for a in accuracies])+"\n")
-                f.write("\n\n\n\n\n\n")
+                f.write(str(input_length) + ";" + ",".join([str(l) for l in losses]) + ";" + ",".join([str(a) for a in accuracies]))
+                f.write("\n")
             # Set next input size
             input_length += 2
