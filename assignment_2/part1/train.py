@@ -104,12 +104,15 @@ def train(config):
 
         if step % 10 == 0:
 
-            print("[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
+            message = "[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
                   "Accuracy = {:.2f}, Loss = {:.3f}".format(
                     datetime.now().strftime("%Y-%m-%d %H:%M"), step,
                     config.train_steps, config.batch_size, examples_per_second,
-                    accuracy, loss
-            ))
+                    accuracy, loss)
+            print(message)
+            if config.log_path != "":
+                with open(config.log_path, "a") as f:
+                    f.write(message)
             accuracies.append(np.mean(accuracies_last10))
             losses.append(np.mean(losses_last10))
             accuracies_last10 = []
@@ -143,6 +146,7 @@ if __name__ == "__main__":
     parser.add_argument('--max_norm', type=float, default=10.0)
     parser.add_argument('--device', type=str, default="best", help="Training device 'cpu' or 'cuda:0' or 'best'")
     parser.add_argument('--experiment', type=str, default="False", help="Set to true to conduct experiment")
+    parser.add_argument('--log_path', type=str, default="", help="Path to log file")
 
     config = parser.parse_args()
 
@@ -161,6 +165,9 @@ if __name__ == "__main__":
         input_length = 3
         while True:
             print("\n\n\nEXPERIMENT: input length {}\n".format(input_length))
+            if config.log_path != "":
+                with open(config.log_path, "a") as f:
+                    f.write("\n\n\nEXPERIMENT: input length {}\n".format(input_length))
             config.input_length = input_length
             losses, accuracies = train(config)
             # Write to output
