@@ -172,5 +172,6 @@ if __name__ == "__main__":
             # Write to output
             with open(file_out, "a") as f:
                 f.write(str(input_length) + ";" + ",".join([str(l) for l in losses]) + ";" + ",".join([str(a) for a in accuracies])+"\n")
+                f.write("\n\n\n\n\n\n")
             # Set next input size
             input_length += 2
