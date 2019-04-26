@@ -56,6 +56,7 @@ class VanillaRNN(nn.Module):
         for i in range(x.shape[0]):
             self.state = torch.tanh(x[i] @ self.W_hx + self.state @ self.W_hh + self.b_h)
         
+        self.state.detach_()
         out = self.state @ self.W_ph + self.b_p
 
         return out

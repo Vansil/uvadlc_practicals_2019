@@ -22,6 +22,7 @@ import argparse
 import time
 from datetime import datetime
 import numpy as np
+from types import SimpleNamespace
 
 import torch
 from torch.utils.data import DataLoader
@@ -80,9 +81,9 @@ def train(config):
         logits = model.forward(batch_inputs)
 
         # backprop
-        loss = criterion(logits, batch_targets)
         optimizer.zero_grad()
-        loss.backward(retain_graph=True)
+        loss = criterion(logits, batch_targets)
+        loss.backward()
 
         ############################################################################
         # QUESTION: what happens here and why?
@@ -99,6 +100,7 @@ def train(config):
         t2 = time.time()
         examples_per_second = config.batch_size/float(t2-t1)
 
+        # track metrics
         accuracies_last10.append(accuracy.tolist())
         losses_last10.append(loss.tolist())
 
@@ -111,18 +113,23 @@ def train(config):
             print(message)
             if config.log_path != "":
                 with open(config.log_path, "a") as f:
-                    f.write(message)
+                    f.write(message + "\n")
             accuracies.append(np.mean(accuracies_last10))
             losses.append(np.mean(losses_last10))
             accuracies_last10 = []
             losses_last10 = []
 
-        if step == config.train_steps:
+        # Early stopping criterion: average accuracy over last 1000 iters was lower than the 1000 before that
+        stopping_criterion =  len(accuracies) > 200 and \
+            np.mean(accuracies[-100:]) < np.mean(accuracies[-200:-100])
+
+        if step == config.train_steps or stopping_criterion:
             # If you receive a PyTorch data-loader error, check this bug report:
             # https://github.com/pytorch/pytorch/pull/9655
+            print('Done training.')
             return losses, accuracies
 
-    print('Done training.')
+    
 
 
  ################################################################################
@@ -156,9 +163,6 @@ if __name__ == "__main__":
         # Conduct experiment
         # Vary input length and evaluate accuracy and loss over time
         file_out = 'output/experiment_results_{}.txt'.format(config.model_type)
-        
-        with open(file_out, "a") as f:
-            f.write("len;losses;accuracies")
 
         # run until external time limit
         input_length = 3
@@ -172,6 +176,6 @@ if __name__ == "__main__":
             # Write to output
             with open(file_out, "a") as f:
                 f.write(str(input_length) + ";" + ",".join([str(l) for l in losses]) + ";" + ",".join([str(a) for a in accuracies]))
-                f.write("\n")
+                f.write('\n')
             # Set next input size
             input_length += 2

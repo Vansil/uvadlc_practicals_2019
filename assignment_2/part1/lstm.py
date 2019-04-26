@@ -80,6 +80,9 @@ class LSTM(nn.Module):
             s.state = g * i + s.state * f
             s.hidden = torch.tanh(s.state) * o
 
+        s.state.detach_()
+        s.hidden.detach_()
+
         # Compute output only in last layer
         out = s.hidden @ s.Wph + s.bp
 
