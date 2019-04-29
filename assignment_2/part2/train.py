@@ -28,8 +28,8 @@ import torch
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from part2.dataset import TextDataset
-from part2.model import TextGenerationModel
+from dataset import TextDataset
+from model import TextGenerationModel
 
 ################################################################################
 
@@ -41,7 +41,7 @@ def train(config):
     # Initialize the model that we are going to use
     model = TextGenerationModel( ... )  # fixme
 
-    # Initialize the dataset and data loader (note the +1)
+    # Initialize the dataset and data loader
     dataset = TextDataset( ... )  # fixme
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
 

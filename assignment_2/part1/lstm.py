@@ -26,27 +26,40 @@ import torch.nn as nn
 
 class LSTM(nn.Module):
 
-    def __init__(self, input_dim, num_hidden, num_classes, batch_size, device='cpu'):
+    def __init__(self, embed_dim, num_hidden, num_classes, device='cpu'):
         super(LSTM, self).__init__()
 
-        # Weight initialisation
-        init_range = lambda fan_in, fan_out : np.sqrt(6 / (fan_in + fan_out))
-        init_Wgx = init_Wix = init_Wfx = init_Wox = init_range(num_hidden, input_dim)
-        init_Wgh = init_Wih = init_Wfh = init_Woh = init_range(num_hidden, num_hidden)
+        # Store params
+        self.num_hidden = num_hidden
+        self.device = device
 
-        self.Wgx = nn.Parameter(torch.Tensor(input_dim, num_hidden).uniform_(-init_Wgx, init_Wgx))
-        self.Wgh = nn.Parameter(torch.Tensor(num_hidden, num_hidden).uniform_(-init_Wgh, init_Wgh))
+        # Embedding layer
+        self.embedding = nn.Embedding(10, embed_dim)
 
-        self.Wix = nn.Parameter(torch.Tensor(input_dim, num_hidden).uniform_(-init_Wix, init_Wix))
-        self.Wih = nn.Parameter(torch.Tensor(num_hidden, num_hidden).uniform_(-init_Wih, init_Wih))
+        # Orthogonal weight initialisation
+        self.Wgx = nn.Parameter(torch.Tensor(embed_dim, num_hidden))
+        self.Wgh = nn.Parameter(torch.Tensor(num_hidden, num_hidden))
 
-        self.Wfx = nn.Parameter(torch.Tensor(input_dim, num_hidden).uniform_(-init_Wfx, init_Wfx))
-        self.Wfh = nn.Parameter(torch.Tensor(num_hidden, num_hidden).uniform_(-init_Wfh, init_Wfh))
+        self.Wix = nn.Parameter(torch.Tensor(embed_dim, num_hidden))
+        self.Wih = nn.Parameter(torch.Tensor(num_hidden, num_hidden))
 
-        self.Wox = nn.Parameter(torch.Tensor(input_dim, num_hidden).uniform_(-init_Wox, init_Wox))
-        self.Woh = nn.Parameter(torch.Tensor(num_hidden, num_hidden).uniform_(-init_Woh, init_Woh))
+        self.Wfx = nn.Parameter(torch.Tensor(embed_dim, num_hidden))
+        self.Wfh = nn.Parameter(torch.Tensor(num_hidden, num_hidden))
 
-        self.Wph = nn.Parameter(torch.Tensor(num_hidden, num_classes).zero_())
+        self.Wox = nn.Parameter(torch.Tensor(embed_dim, num_hidden))
+        self.Woh = nn.Parameter(torch.Tensor(num_hidden, num_hidden))
+
+        self.Wph = nn.Parameter(torch.Tensor(num_hidden, num_classes))
+
+        nn.init.orthogonal_(self.Wgx)
+        nn.init.orthogonal_(self.Wgh)
+        nn.init.orthogonal_(self.Wix)
+        nn.init.orthogonal_(self.Wih)
+        nn.init.orthogonal_(self.Wfx)
+        nn.init.orthogonal_(self.Wfh)
+        nn.init.orthogonal_(self.Wox)
+        nn.init.orthogonal_(self.Woh)
+        nn.init.orthogonal_(self.Wph)
 
         # initialise biases
         self.bg = nn.Parameter(torch.Tensor(num_hidden).zero_())
@@ -59,31 +72,32 @@ class LSTM(nn.Module):
         # Weights and biases to device
         self.to(device)
 
-        # initialise cell state and hidden layer
-        self.state = torch.Tensor(batch_size, num_hidden).zero_().to(device)
-        self.hidden = torch.Tensor(batch_size, num_hidden).zero_().to(device)
-
 
     def forward(s, x):
         # shape input x:  (sequence length, batch size, input size=1)
         # shape output p: (batch size, class)
         
-
+        # initialise cell state and hidden layer
+        batch_size = x.shape[1]
+        state = torch.Tensor(batch_size, s.num_hidden).zero_().to(s.device)
+        hidden = torch.Tensor(batch_size, s.num_hidden).zero_().to(s.device)
 
         for t in range(x.shape[0]):
-            # Gates
-            g = torch.tanh(x[t] @ s.Wgx + s.hidden @ s.Wgh + s.bg)
-            i = torch.sigmoid(x[t] @ s.Wix + s.hidden @ s.Wih + s.bi)
-            f = torch.sigmoid(x[t] @ s.Wfx + s.hidden @ s.Wfh + s.bf)
-            o = torch.sigmoid(x[t] @ s.Wox + s.hidden @ s.Woh + s.bo)
-            # update state and hidden layer
-            s.state = g * i + s.state * f
-            s.hidden = torch.tanh(s.state) * o
+            # Embed
+            embed = s.embedding(x[t])
 
-        s.state.detach_()
-        s.hidden.detach_()
+            # Gates
+            g = torch.tanh(embed @ s.Wgx + hidden @ s.Wgh + s.bg)
+            i = torch.sigmoid(embed @ s.Wix + hidden @ s.Wih + s.bi)
+            f = torch.sigmoid(embed @ s.Wfx + hidden @ s.Wfh + s.bf)
+            o = torch.sigmoid(embed @ s.Wox + hidden @ s.Woh + s.bo)
+            # update state and hidden layer
+            state = g * i + state * f
+            hidden = torch.tanh(state) * o
 
         # Compute output only in last layer
-        out = s.hidden @ s.Wph + s.bp
+        state.detach_()
+        hidden.detach_()
+        out = hidden @ s.Wph + s.bp
 
         return out

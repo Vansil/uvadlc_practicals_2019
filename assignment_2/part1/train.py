@@ -49,14 +49,14 @@ def train(config):
 
     # Initialize the model that we are going to use
     if config.model_type == 'RNN':
-        model = VanillaRNN(config.input_dim, config.num_hidden, \
-            config.num_classes, config.batch_size, device)
+        model = VanillaRNN(config.embed_dim, config.num_hidden, \
+            config.num_classes, device)
     else:
-        model = LSTM(config.input_dim, config.num_hidden, \
-            config.num_classes, config.batch_size, device)
+        model = LSTM(config.embed_dim, config.num_hidden, \
+            config.num_classes, device)
 
-    # Initialize the dataset and data loader (note the +1)
-    dataset = PalindromeDataset(config.input_length+1)
+    # Initialize the dataset and data loader
+    dataset = PalindromeDataset(config.input_length)
     data_loader = DataLoader(dataset, config.batch_size, num_workers=1)
 
     # Setup the loss and optimizer
@@ -71,8 +71,9 @@ def train(config):
 
     for step, (batch_inputs, batch_targets) in enumerate(data_loader):
         # Transform input to RNN input format (sequence, batch, input)
-        batch_inputs = batch_inputs.t().unsqueeze(2).to(device)
-        batch_targets = batch_targets.to(device)
+        # batch_inputs = batch_inputs.t().unsqueeze(2).to(device=device, dtype=torch.long)
+        batch_inputs = batch_inputs.t().to(device=device, dtype=torch.long)
+        batch_targets = batch_targets.to(device=device, dtype=torch.long)
 
         # Only for time measurement of step through network
         t1 = time.time()
@@ -121,7 +122,7 @@ def train(config):
 
         # Early stopping criterion: average accuracy over last 1000 iters was lower than the 1000 before that
         stopping_criterion =  len(accuracies) > 200 and \
-            np.mean(accuracies[-100:]) < np.mean(accuracies[-200:-100])
+            np.mean(accuracies[-100:]) <= np.mean(accuracies[-200:-100])
 
         if step == config.train_steps or stopping_criterion:
             # If you receive a PyTorch data-loader error, check this bug report:
@@ -141,10 +142,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # Model params
-    parser.add_argument('--model_type', type=str, default="LSTM", help="Model type, should be 'RNN' or 'LSTM'")
-    parser.add_argument('--input_length', type=int, default=10, help='Length of an input sequence')
+    parser.add_argument('--model_type', type=str, default="RNN", help="Model type, should be 'RNN' or 'LSTM'")
+    parser.add_argument('--input_length', type=int, default=3, help='Length of an input sequence')
     parser.add_argument('--input_dim', type=int, default=1, help='Dimensionality of input sequence')
     parser.add_argument('--num_classes', type=int, default=10, help='Dimensionality of output sequence')
+    parser.add_argument('--embed_dim', type=int, default=16, help='Dimensionality the character embedding')
     parser.add_argument('--num_hidden', type=int, default=128, help='Number of hidden units in the model')
     parser.add_argument('--batch_size', type=int, default=128, help='Number of examples to process in a batch')
     parser.add_argument('--learning_rate', type=float, default=0.001, help='Learning rate')
@@ -166,6 +168,7 @@ if __name__ == "__main__":
 
         # run until external time limit
         input_length = 3
+        step_size = 1
         while True:
             print("\n\n\nEXPERIMENT: input length {}\n".format(input_length))
             if config.log_path != "":
@@ -178,4 +181,7 @@ if __name__ == "__main__":
                 f.write(str(input_length) + ";" + ",".join([str(l) for l in losses]) + ";" + ",".join([str(a) for a in accuracies]))
                 f.write('\n')
             # Set next input size
-            input_length += 2
+            input_length += step_size
+            if input_length % 10 < step_size:
+                step_size += 1
+

@@ -22,12 +22,19 @@ import torch.nn as nn
 
 class TextGenerationModel(nn.Module):
 
-    def __init__(self, batch_size, seq_length, vocabulary_size,
+    def __init__(self, dim_embed, max_seq_length, vocabulary_size,
                  lstm_num_hidden=256, lstm_num_layers=2, device='cuda:0'):
-
         super(TextGenerationModel, self).__init__()
-        # Initialization here...
+        
+        # Character embedding
+        self.embedding = nn.Embedding(vocabulary_size, dim_embed)
+
+        # LSTM
+        self.lstm = nn.LSTM(dim_embed, lstm_num_hidden, num_layers=lstm_num_layers)
 
     def forward(self, x):
-        # Implementation here...
-        pass
+        # Shape x: [sequence, batch, feature]
+
+        # Embed each character
+        # Forward with LSTM
+        # Return output at each time step

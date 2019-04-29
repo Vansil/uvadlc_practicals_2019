@@ -27,24 +27,28 @@ import numpy as np
 
 class VanillaRNN(nn.Module):
 
-    def __init__(self, input_dim, num_hidden, num_classes, batch_size, device='cpu'):
+    def __init__(self, embed_dim, num_hidden, num_classes, device='cpu'):
         super(VanillaRNN, self).__init__()
 
-        # Weight initialisation
-        init_range = lambda fan_in, fan_out : np.sqrt(6 / (fan_in + fan_out))
-        init_Whx = init_range(num_hidden, input_dim)
-        init_Whh = init_range(num_hidden, num_hidden)
+        # Store parameters
+        self.num_hidden = num_hidden
+        self.device = device
 
-        self.W_hx = nn.Parameter(torch.Tensor(input_dim, num_hidden).uniform_(-init_Whx, init_Whx))
-        self.W_hh = nn.Parameter(torch.Tensor(num_hidden, num_hidden).uniform_(-init_Whh, init_Whh))
-        self.W_ph = nn.Parameter(torch.Tensor(num_hidden, num_classes).zero_())
+        # Embedding layer
+        self.embedding = nn.Embedding(10, embed_dim)
+
+        # Orthogonal weight initialisation
+        self.W_hx = nn.Parameter(torch.Tensor(embed_dim, num_hidden))
+        self.W_hh = nn.Parameter(torch.Tensor(num_hidden, num_hidden))
+        self.W_ph = nn.Parameter(torch.Tensor(num_hidden, num_classes))
+
+        nn.init.orthogonal_(self.W_hx)
+        nn.init.orthogonal_(self.W_hh)
+        nn.init.orthogonal_(self.W_ph)
 
         # Bias initialisation
         self.b_h = nn.Parameter(torch.Tensor(num_hidden).zero_())
         self.b_p = nn.Parameter(torch.Tensor(num_classes).zero_())
-
-        # State initialisation
-        self.state = torch.Tensor(batch_size, num_hidden).zero_().to(device)
 
         # set device
         self.to(device)
@@ -53,10 +57,17 @@ class VanillaRNN(nn.Module):
         # shape input x:  (sequence length, batch size, input size=1)
         # shape output p: (batch size, class)
         
+        # State initialisation
+        batch_size = x.shape[1]
+        state = torch.Tensor(batch_size, self.num_hidden).zero_().to(self.device)
+
+        # Sequentially input data
         for i in range(x.shape[0]):
-            self.state = torch.tanh(x[i] @ self.W_hx + self.state @ self.W_hh + self.b_h)
+            # print(x[i])
+            state = torch.tanh(self.embedding.forward(x[i]) @ self.W_hx + state @ self.W_hh + self.b_h)
         
-        self.state.detach_()
-        out = self.state @ self.W_ph + self.b_p
+        # Forward output
+        state.detach_()
+        out = state @ self.W_ph + self.b_p
 
         return out
