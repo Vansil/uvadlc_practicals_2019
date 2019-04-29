@@ -1,5 +1,2 @@
-assignment_1/code/.ipynb_checkpoints/
-assignment_1/code/Testbook.ipynb
-assignment_1/code/__pycache__/
-assignment_1/code/cifar10/
-assignment_1/code/jobs/
+assignment_1/*
+*.pyc
