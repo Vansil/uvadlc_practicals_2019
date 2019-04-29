@@ -157,10 +157,10 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
 
 
     B,D = input_mean_subtr.shape
-    x_hat = input_mean_subtr / sample_std
-    grad_xhat = torch.mul(grad_output, gamma)
-    grad_input = 1/B * 1/sample_std * \
-      (B*grad_xhat - torch.sum(grad_xhat, dim=0) - x_hat * torch.sum(grad_xhat * x_hat, dim=0))
+    # x_hat = input_mean_subtr / sample_std
+    # grad_xhat = torch.mul(grad_output, gamma)
+    # grad_input = 1/B * 1/sample_std * \
+    #   (B*grad_xhat - torch.sum(grad_xhat, dim=0) - x_hat * torch.sum(grad_xhat * x_hat, dim=0))
 
 
 
@@ -171,20 +171,14 @@ class CustomBatchNormManualFunction(torch.autograd.Function):
     # grad_input = torch.DoubleTensor(B,D)
     # for r in range(B):
     #   for j in range(D):
-    #     # HENK = (onehot(B,r)-1/B)/sample_std[j]
-    #     # JAPIE = input_norm[:,j]/B/torch.pow(sample_std[j],3)
-
-    #     # SJAAK = input_norm[:,j]
-    #     # PANDA = onehot(B,r)-1/B
-    #     # print(SJAAK.type(), PANDA.type())
-    #     # BERT = torch.einsum('b,b', SJAAK.double(), PANDA.double())
-    #     # KAREL = HENK.double() - JAPIE.double() * BERT
     #     grad_input[r,j] = torch.einsum('b,b',
     #       grad_output[:,j] * gamma[j],
     #       (onehot(B,r)-1/B)/sample_std[j] - input_norm[:,j]/B/torch.pow(sample_std[j],3) * 
     #         torch.einsum('b,b', input_norm[:,j], onehot(B,r)-1/B))
 
-    #       # (onehot(B,r)-1/B)/sample_std[j] - input_norm[:,j]/B/torch.pow(sample_std[j],3) * torch.einsum('b,b', input_norm[:,j], onehot(B,r)-1/B)
+          # (onehot(B,r)-1/B)/sample_std[j] - input_norm[:,j]/B/torch.pow(sample_std[j],3) * torch.einsum('b,b', input_norm[:,j], onehot(B,r)-1/B)
+
+    raise NotImplementedError
 
     ########################
     # END OF YOUR CODE    #

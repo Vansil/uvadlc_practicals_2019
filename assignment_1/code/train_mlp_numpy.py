@@ -138,13 +138,17 @@ def train():
   # Save raw output
   now = datetime.datetime.now()
   time_stamp = "{}{}{}{}{}".format(now.year, now.month, now.day, now.hour, now.minute)
+  net_name = "mlpNumpy"
+  out_dir = os.path.join(output_dir, net_name, time_stamp)
+  if not os.path.isdir(out_dir):
+    os.makedirs(os.path.join(output_dir, net_name, time_stamp))
   metrics = {"train_loss": train_loss,
              "gradient_norms": gradient_norms,
              "train_acc": train_acc,
              "test_acc": test_acc}
   raw_data = {"net": net,
               "metrics": metrics}
-  pickle.dump(raw_data, open(os.path.join(output_dir, "raw_data_" + time_stamp), "wb"))
+  pickle.dump(raw_data, open(os.path.join(out_dir, "raw_data.p"), "wb"))
 
   # Save plots
   # Loss
@@ -156,7 +160,7 @@ def train():
         title='Batch training loss')
   ax.set_yscale('log')
   ax.grid()
-  fig.savefig(os.path.join(output_dir, "loss_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(out_dir, "loss.png"))
   # gradient norm
   fig, ax = plt.subplots()
   iter = [i for (i,q) in gradient_norms]
@@ -165,7 +169,7 @@ def train():
   ax.set(xlabel='Iteration', ylabel='Norm',
         title='Gradient norm')
   ax.grid()
-  fig.savefig(os.path.join(output_dir, "gradient_norm_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(out_dir, "gradient_norm.png"))
   # accuracies
   fig, ax = plt.subplots()
   iter = [i for (i,q) in train_acc]
@@ -178,7 +182,7 @@ def train():
         title='Train and test accuracy')
   ax.legend()
   ax.grid()
-  fig.savefig(os.path.join(output_dir, "accuracy_" + time_stamp + ".png"))
+  fig.savefig(os.path.join(out_dir, "accuracy.png"))
 
 
 def print_flags():
