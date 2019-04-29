@@ -140,8 +140,6 @@ def train():
         acc = accuracy(prediction, y)
         test_acc.append( (iteration, acc) )
         print("Iteration: {}\t\tTest accuracy: {}".format(iteration, acc))
-        with open("jobs/status.txt","a") as f:
-          f.write("  Iter {}\t\tTest acc: {}\n".format(iteration,acc))
   
   # Save raw output
   now = datetime.datetime.now()
