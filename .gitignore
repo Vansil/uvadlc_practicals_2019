@@ -1,2 +1,3 @@
 assignment_1/*
-*.pyc
+**.pyc
+**/jobs/**
