@@ -17,17 +17,21 @@ for model in ['RNN', 'LSTM']:
 
     # make figures
     with open('output/experiment_results_{}.txt'.format(model)) as f: 
-        for line in f: 
-            data = line.split(';')
-            seq_len = int(data[0])
-            losses = [float(x) for x in data[1].split(',')]
-            accuracies = [float(x) for x in data[2].split(',')]
-            print(seq_len, losses[-1], accuracies[-1])
-            # Plot
-            x = np.arange(len(losses))*10+10
-            ax_loss.plot(x, losses)
-            ax_acc.plot(x, accuracies)
-            legend.append("length {}".format(seq_len))
+       count = 0
+       for line in f: 
+              count += 1
+              if (model == 'RNN' and count > 12) or (model =='LSTM' and count > 8):
+                  break
+              data = line.split(';')
+              seq_len = int(data[0])
+              losses = [float(x) for x in data[1].split(',')]
+              accuracies = [float(x) for x in data[2].split(',')]
+              print(seq_len, losses[-1], accuracies[-1])
+              # Plot
+              x = np.arange(len(losses))*10+10
+              ax_loss.plot(x, losses)
+              ax_acc.plot(x, accuracies)
+              legend.append("length {}".format(seq_len))
 
     # Save figures
     fig_acc.legend(legend, ncol=4, loc='lower center', 
@@ -47,6 +51,6 @@ for model in ['RNN', 'LSTM']:
     ax_loss.xaxis.set_label_text("Iteration")
     ax_loss.yaxis.set_label_text("Loss")
 
-    fig_acc.savefig('output/experiment_results_{}_accuracy.png'.format(model))
-    fig_loss.savefig('output/experiment_results_{}_loss.png'.format(model))
+    fig_acc.savefig('output/experiment_results_{}_accuracy_first.png'.format(model))
+    fig_loss.savefig('output/experiment_results_{}_loss_first.png'.format(model))
     
