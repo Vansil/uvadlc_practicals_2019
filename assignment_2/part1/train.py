@@ -164,7 +164,7 @@ if __name__ == "__main__":
     else:
         # Conduct experiment
         # Vary input length and evaluate accuracy and loss over time
-        file_out = 'output/experiment_results_{}.txt'.format(config.model_type)
+        file_out = 'output/experiment_results_{}_batch{}.txt'.format(config.model_type,config.batch_size)
 
         # run until external time limit
         input_length = 3
