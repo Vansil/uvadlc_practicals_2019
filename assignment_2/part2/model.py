@@ -18,6 +18,8 @@ from __future__ import division
 from __future__ import print_function
 
 import torch.nn as nn
+import torch
+import numpy as np
 
 
 class TextGenerationModel(nn.Module):
@@ -30,11 +32,59 @@ class TextGenerationModel(nn.Module):
         self.embedding = nn.Embedding(vocabulary_size, dim_embed)
 
         # LSTM
+        self.hidden = None
+        self.cell = None
         self.lstm = nn.LSTM(dim_embed, lstm_num_hidden, num_layers=lstm_num_layers)
+        self.lstm_num_layers = lstm_num_layers
+        self.lstm_num_hidden = lstm_num_hidden
+
+        # Final linear layer
+        self.linear = nn.Linear(lstm_num_hidden, vocabulary_size)
 
     def forward(self, x):
         # Shape x: [sequence, batch, feature]
+        batch_size = x.shape[1]
 
         # Embed each character
-        # Forward with LSTM
+        emb = self.embedding(x)
+
+        # Forward LSTM, update hidden and cell state
+        state_shape = [self.lstm_num_layers, batch_size, self.lstm_num_hidden]
+        self.reset_state(state_shape)
+        lstm_outs, (self.hidden, self.cell) = self.lstm(emb, (self.hidden, self.cell))
+
+        # Forward final linear layer
+        outs = self.linear(lstm_outs)
+
         # Return output at each time step
+        return outs
+
+    def reset_state(self, state_shape):
+        # Sets hidden and cell state to zeros
+        self.hidden = torch.zeros(*state_shape)
+        self.cell = torch.zeros(*state_shape)
+
+    def predict(self, c, length=30, temperature=0):
+        # Predict sentence from given character id
+        with torch.no_grad():
+            out = [c]
+
+            # print(length, temperature)
+
+            state_shape = [self.lstm_num_layers, 1, self.lstm_num_hidden]
+            self.reset_state(state_shape)
+
+            # Iteratively append next character
+            for i in range(length-1):
+                x = torch.LongTensor([c]).unsqueeze(0)
+                o = self.forward(x)
+                # sample character
+                if temperature == 0: # greedy
+                    c = o.squeeze().argmax().tolist()
+                else:
+                    logs = np.exp(-1/temperature * o.squeeze().numpy())
+                    probs = logs / np.sum(logs)
+                    c = np.random.choice(np.arange(len(probs)), p=probs)
+                out.append(c)
+        
+        return out
