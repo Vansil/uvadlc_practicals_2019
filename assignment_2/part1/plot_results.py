@@ -2,8 +2,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-for model in ['RNN', 'LSTM']:
-    print("Model: {}".format(model))
+for model in ['128', '512']:
+    print("Model batch size: {}".format(model))
     # init figures
     fig_acc = plt.figure(figsize=(6,7))
     fig_loss = plt.figure(figsize=(6,7))
@@ -16,12 +16,12 @@ for model in ['RNN', 'LSTM']:
     legend = []
 
     # make figures
-    with open('output/experiment_results_{}.txt'.format(model)) as f: 
+    with open('output/experiment_results_LSTM_batch{}.txt'.format(model)) as f: 
        count = 0
        for line in f: 
               count += 1
-              if (model == 'RNN' and count > 12) or (model =='LSTM' and count > 8):
-                  break
+              # if count > 12:
+              #     break
               data = line.split(';')
               seq_len = int(data[0])
               losses = [float(x) for x in data[1].split(',')]
@@ -51,6 +51,6 @@ for model in ['RNN', 'LSTM']:
     ax_loss.xaxis.set_label_text("Iteration")
     ax_loss.yaxis.set_label_text("Loss")
 
-    fig_acc.savefig('output/experiment_results_{}_accuracy_first.png'.format(model))
-    fig_loss.savefig('output/experiment_results_{}_loss_first.png'.format(model))
+    fig_acc.savefig('output/experiment_results_LSTM_accuracy_batch{}.png'.format(model))
+    fig_loss.savefig('output/experiment_results_LSTM_loss_batch{}.png'.format(model))
     
