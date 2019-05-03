@@ -42,6 +42,7 @@ class TextGenerationModel(nn.Module):
         self.linear = nn.Linear(lstm_num_hidden, vocabulary_size)
 
         # Move model to device
+        self.device = device
         self.to(device)
 
     def forward(self, x):
@@ -64,8 +65,8 @@ class TextGenerationModel(nn.Module):
 
     def reset_state(self, state_shape):
         # Sets hidden and cell state to zeros
-        self.hidden = torch.zeros(*state_shape)
-        self.cell = torch.zeros(*state_shape)
+        self.hidden = torch.zeros(*state_shape).to(self.device)
+        self.cell = torch.zeros(*state_shape).to(self.device)
 
     def predict(self, c, length=30, temperature=0):
         # Predict sentence from given character id
