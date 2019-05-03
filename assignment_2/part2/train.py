@@ -66,8 +66,8 @@ def train(config):
         # Only for time measurement of step through network
         t1 = time.time()
 
-        batch_inputs = torch.LongTensor([x.tolist() for x in batch_inputs], device=device)
-        batch_targets = torch.LongTensor([x.tolist() for x in batch_targets], device=device)
+        batch_inputs = torch.LongTensor([x.tolist() for x in batch_inputs]).to(device)
+        batch_targets = torch.LongTensor([x.tolist() for x in batch_targets]).to(device)
 
         # Forward pass
         logits = model.forward(batch_inputs)
