@@ -51,6 +51,8 @@ def train(config):
     # Initialize the model that we are going to use
     model = TextGenerationModel(config.lstm_num_embed, config.seq_length, dataset.vocab_size,
                  config.lstm_num_hidden, config.lstm_num_layers, device)
+    if config.checkpoint_path is not None:
+        model = torch.load(config.checkpoint_path).to(device)
     writer.log("Model:\n" + str(model))
 
 
@@ -72,7 +74,6 @@ def train(config):
 
         # backprop
         optimizer.zero_grad()
-        # TODO: why transpose?
         loss = criterion(logits.transpose(1,2), batch_targets)
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.max_norm)
@@ -87,7 +88,7 @@ def train(config):
         examples_per_second = config.batch_size/float(t2-t1)
 
         # Learning rate decay
-        if step % config.learning_rate_step == 0 and step == 0:
+        if step % config.learning_rate_step == 0 and step != 0:
             learning_rate *= config.learning_rate_decay
             writer.log("Reduced learning rate: {}".format(learning_rate))
             for g in optimizer.param_groups:
@@ -113,6 +114,8 @@ def train(config):
                     text = dataset.convert_to_string(model.predict(i, 100, temp)).replace("\n", "<br>")
                     writer.log(text)
                     writer.write('samples', text)
+
+        if step % config.checkpoint_every == 0:    
             writer.save_model(model, step)
 
         if step == config.train_steps:
@@ -151,9 +154,11 @@ if __name__ == "__main__":
     parser.add_argument('--max_norm', type=float, default=5.0, help='--')
 
     # Misc params
-    parser.add_argument('--summary_path', type=str, default="summaries/001", help='Output path for summaries')
-    parser.add_argument('--print_every', type=int, default=5, help='How often to print training progress')
-    parser.add_argument('--sample_every', type=int, default=100, help='How often to sample from the model')
+    parser.add_argument('--summary_path', type=str, default="summaries/default", help='Output path for summaries')
+    parser.add_argument('--print_every', type=int, default=10000, help='How often to print training progress')
+    parser.add_argument('--sample_every', type=int, default=50000, help='How often to sample from the model and save it')
+    parser.add_argument('--checkpoint_every', type=int, default=50000, help='How often to sample from the model and save it')
+    parser.add_argument('--checkpoint_path', type=str, default=None, help='Path to checkpoint file')
 
     config = parser.parse_args()
     config.train_steps = int(config.train_steps)

@@ -66,6 +66,7 @@ class TextGenerationModel(nn.Module):
 
     def predict(self, c, length=30, temperature=0):
         # Predict sentence from given character id
+        # TODO: implement correct T function
         with torch.no_grad():
             out = [c]
 
@@ -82,8 +83,8 @@ class TextGenerationModel(nn.Module):
                 if temperature == 0: # greedy
                     c = o.squeeze().argmax().tolist()
                 else:
-                    logs = np.exp(-1/temperature * o.squeeze().numpy())
-                    probs = logs / np.sum(logs)
+                    logits = np.exp(o.squeeze().numpy() / temperature)
+                    probs = logits / np.sum(logits)
                     c = np.random.choice(np.arange(len(probs)), p=probs)
                 out.append(c)
         
