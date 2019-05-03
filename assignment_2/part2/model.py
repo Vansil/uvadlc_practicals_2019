@@ -87,7 +87,7 @@ class TextGenerationModel(nn.Module):
                 if temperature == 0: # greedy
                     c = o.squeeze().argmax().tolist()
                 else:
-                    logits = np.exp(o.squeeze().numpy() / temperature)
+                    logits = np.exp(o.squeeze().cpu().numpy() / temperature)
                     probs = logits / np.sum(logits)
                     c = np.random.choice(np.arange(len(probs)), p=probs)
                 out.append(c)
