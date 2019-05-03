@@ -81,7 +81,7 @@ class TextGenerationModel(nn.Module):
 
             # Iteratively append next character
             for i in range(length-1):
-                x = torch.LongTensor([c]).unsqueeze(0)
+                x = torch.LongTensor([c]).unsqueeze(0).to(self.device)
                 o = self.forward(x)
                 # sample character
                 if temperature == 0: # greedy
