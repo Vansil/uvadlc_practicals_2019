@@ -61,67 +61,75 @@ def train(config):
     learning_rate = config.learning_rate
     optimizer = optim.RMSprop(model.parameters(), lr=learning_rate)
 
-    for step, (batch_inputs, batch_targets) in enumerate(data_loader):
+    epoch = 0
+    total_step = 0
+    while True:
+        
 
-        # Only for time measurement of step through network
-        t1 = time.time()
+        for step, (batch_inputs, batch_targets) in enumerate(data_loader):
 
-        batch_inputs = torch.LongTensor([x.tolist() for x in batch_inputs]).to(device)
-        batch_targets = torch.LongTensor([x.tolist() for x in batch_targets]).to(device)
+            # Only for time measurement of step through network
+            t1 = time.time()
 
-        # Forward pass
-        logits = model.forward(batch_inputs)
+            batch_inputs = torch.LongTensor([x.tolist() for x in batch_inputs]).to(device)
+            batch_targets = torch.LongTensor([x.tolist() for x in batch_targets]).to(device)
 
-        # backprop
-        optimizer.zero_grad()
-        loss = criterion(logits.transpose(1,2), batch_targets)
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.max_norm)
-        optimizer.step()
+            # Forward pass
+            logits = model.forward(batch_inputs)
 
-        with torch.no_grad():
-            # accuracy = fraction of characters predicted correctly
-            accuracy = (logits.argmax(dim=2) == batch_targets).to(dtype=torch.float).mean()
+            # backprop
+            optimizer.zero_grad()
+            loss = criterion(logits.transpose(1,2), batch_targets)
+            loss.backward()
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=config.max_norm)
+            optimizer.step()
 
-        # Just for time measurement
-        t2 = time.time()
-        examples_per_second = config.batch_size/float(t2-t1)
+            with torch.no_grad():
+                # accuracy = fraction of characters predicted correctly
+                accuracy = (logits.argmax(dim=2) == batch_targets).to(dtype=torch.float).mean()
 
-        # Learning rate decay
-        if step % config.learning_rate_step == 0 and step != 0:
-            learning_rate *= config.learning_rate_decay
-            writer.log("Reduced learning rate: {}".format(learning_rate))
-            for g in optimizer.param_groups:
-                g['lr'] = learning_rate
+            # Just for time measurement
+            t2 = time.time()
+            examples_per_second = config.batch_size/float(t2-t1)
 
-        # Metrics and samples
-        if step % config.print_every == 0:
-            writer.log("[{}] Train Step {:04d}/{:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
-                  "Accuracy = {:.2f}, Loss = {:.3f}".format(
-                    datetime.now().strftime("%Y-%m-%d %H:%M"), step,
-                    config.train_steps, config.batch_size, examples_per_second,
-                    accuracy, loss
-            ))
-            writer.write('metrics', '{},{},{},{}'.format(step, accuracy, loss, learning_rate))
+            # Learning rate decay
+            if step % config.learning_rate_step == 0 and step != 0:
+                learning_rate *= config.learning_rate_decay
+                writer.log("Reduced learning rate: {}".format(learning_rate))
+                for g in optimizer.param_groups:
+                    g['lr'] = learning_rate
 
-        if step % config.sample_every == 0:
-            writer.log("Generating sentences")
-            writer.write('samples', 'ITER{}'.format(step))
-            for temp in [0, .5, 1, 2]:
-                writer.log("\nTemperature: {}".format(temp))
-                writer.write('samples', 'T{}'.format(temp))
-                for i in np.random.choice(dataset.vocab_size, size=5):
-                    text = dataset.convert_to_string(model.predict(i, 100, temp)).replace("\n", "<br>")
-                    writer.log(text)
-                    writer.write('samples', text)
+            # Metrics and samples
+            if step % config.print_every == 0:
+                writer.log("[{}] Epoch {:02d}, Train Step {:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
+                    "Accuracy = {:.2f}, Loss = {:.3f}".format(
+                        datetime.now().strftime("%Y-%m-%d %H:%M"), step,
+                        epoch, config.train_steps, examples_per_second,
+                        accuracy, loss
+                ))
+                writer.write('metrics', '{},{},{},{}'.format(total_step, accuracy, loss, learning_rate))
 
-        if step % config.checkpoint_every == 0:    
-            writer.save_model(model, step)
+            if step % config.sample_every == 0:
+                writer.log("Generating sentences")
+                writer.write('samples', 'ITER{}'.format(step))
+                for temp in [0, .5, 1, 2]:
+                    writer.log("\nTemperature: {}".format(temp))
+                    writer.write('samples', 'T{}'.format(temp))
+                    for i in np.random.choice(dataset.vocab_size, size=5):
+                        text = dataset.convert_to_string(model.predict(i, 100, temp)).replace("\n", "<br>")
+                        writer.log(text)
+                        writer.write('samples', text)
 
-        if step == config.train_steps:
-            # If you receive a PyTorch data-loader error, check this bug report:
-            # https://github.com/pytorch/pytorch/pull/9655
-            break
+            if step % config.checkpoint_every == 0:    
+                writer.save_model(model, step)
+
+            # if step == config.train_steps:
+            #     # If you receive a PyTorch data-loader error, check this bug report:
+            #     # https://github.com/pytorch/pytorch/pull/9655
+            #     break
+
+            total_step += 1
+        epoch += 1
 
     writer.log('Done training.')
 
@@ -155,9 +163,9 @@ if __name__ == "__main__":
 
     # Misc params
     parser.add_argument('--summary_path', type=str, default="summaries/default", help='Output path for summaries')
-    parser.add_argument('--print_every', type=int, default=10000, help='How often to print training progress')
-    parser.add_argument('--sample_every', type=int, default=50000, help='How often to sample from the model and save it')
-    parser.add_argument('--checkpoint_every', type=int, default=50000, help='How often to sample from the model and save it')
+    parser.add_argument('--print_every', type=int, default=1000, help='How often to print training progress')
+    parser.add_argument('--sample_every', type=int, default=5000, help='How often to sample from the model and save it')
+    parser.add_argument('--checkpoint_every', type=int, default=5000, help='How often to sample from the model and save it')
     parser.add_argument('--checkpoint_path', type=str, default=None, help='Path to checkpoint file')
 
     config = parser.parse_args()
