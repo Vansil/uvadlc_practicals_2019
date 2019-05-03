@@ -41,6 +41,9 @@ class TextGenerationModel(nn.Module):
         # Final linear layer
         self.linear = nn.Linear(lstm_num_hidden, vocabulary_size)
 
+        # Move model to device
+        self.to(device)
+
     def forward(self, x):
         # Shape x: [sequence, batch, feature]
         batch_size = x.shape[1]
