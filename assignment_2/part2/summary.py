@@ -1,5 +1,6 @@
 import os
 import torch
+from matplotlib import pyplot as plt
 
 
 class Writer(object):
@@ -24,7 +25,7 @@ class Writer(object):
         '''
         Save model to pickle file
         '''
-        torch.save(model, os.path.join(self.dir_check, '{:09d}.pt'.format(iter)))
+        torch.save(model.cpu(), os.path.join(self.dir_check, '{:09d}.pt'.format(iter)))
         
 
     def log(self, text):
@@ -33,3 +34,50 @@ class Writer(object):
         '''
         print(text)
         self.write('log.txt', text)
+
+class Plotter(object):
+    '''
+    Makes plot from things written by Writer
+    '''
+
+    def plot_metrics(self, metrics_file, output_dir):
+
+        # read
+        iters = []
+        accuracies = []
+        losses = []
+        lrs = []
+
+        with open(metrics_file, 'r') as f:
+            for line in f:
+                it, acc, loss, lr = line.split(',')
+                iters.append(int(it))
+                accuracies.append(float(acc))
+                losses.append(float(loss))
+                lrs.append(float(lr))
+
+        # make plots
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(iters, accuracies)
+        ax.set_title("Character prediction batch accuracy")
+        ax.xaxis.set_label_text("Iteration")
+        ax.yaxis.set_label_text("Accuracy")
+        fig.savefig(os.path.join(output_dir, 'accuracy.png'))
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(iters, losses)
+        ax.set_title("Character prediction batch loss")
+        ax.xaxis.set_label_text("Iteration")
+        ax.yaxis.set_label_text("Loss")
+        fig.savefig(os.path.join(output_dir, 'loss.png'))
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.plot(iters, lrs)
+        ax.set_title("Learning rate")
+        ax.xaxis.set_label_text("Iteration")
+        ax.yaxis.set_label_text("Learning rate")
+        fig.savefig(os.path.join(output_dir, 'learning_rate.png'))
+        

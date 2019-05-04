@@ -68,22 +68,22 @@ class TextGenerationModel(nn.Module):
         self.hidden = torch.zeros(*state_shape).to(self.device)
         self.cell = torch.zeros(*state_shape).to(self.device)
 
-    def predict(self, c, length=30, temperature=0):
-        # Predict sentence from given character id
-        # TODO: implement correct T function
+    def predict(self, cs, length=30, temperature=0):
+        # Predict sentence from given character ids
         with torch.no_grad():
-            out = [c]
-
-            # print(length, temperature)
+            out = cs
 
             state_shape = [self.lstm_num_layers, 1, self.lstm_num_hidden]
             self.reset_state(state_shape)
 
-            # Iteratively append next character
-            for i in range(length-1):
+            # Add input characters
+            for c in cs:
                 x = torch.LongTensor([c]).unsqueeze(0).to(self.device)
                 o = self.forward(x)
-                # sample character
+
+            # Iteratively append next character
+            for i in range(length):
+                # sample character from last output
                 if temperature == 0: # greedy
                     c = o.squeeze().argmax().tolist()
                 else:
@@ -91,5 +91,8 @@ class TextGenerationModel(nn.Module):
                     probs = logits / np.sum(logits)
                     c = np.random.choice(np.arange(len(probs)), p=probs)
                 out.append(c)
+                # input new character
+                x = torch.LongTensor([c]).unsqueeze(0).to(self.device)
+                o = self.forward(x)
         
         return out

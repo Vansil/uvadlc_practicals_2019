@@ -103,8 +103,8 @@ def train(config):
             if step % config.print_every == 0:
                 writer.log("[{}] Epoch {:02d}, Train Step {:04d}, Batch Size = {}, Examples/Sec = {:.2f}, "
                     "Accuracy = {:.2f}, Loss = {:.3f}".format(
-                        datetime.now().strftime("%Y-%m-%d %H:%M"), step,
-                        epoch, config.train_steps, examples_per_second,
+                        datetime.now().strftime("%Y-%m-%d %H:%M"),
+                        epoch, step, config.batch_size, examples_per_second,
                         accuracy, loss
                 ))
                 writer.write('metrics', '{},{},{},{}'.format(total_step, accuracy, loss, learning_rate))
@@ -116,7 +116,12 @@ def train(config):
                     writer.log("\nTemperature: {}".format(temp))
                     writer.write('samples', 'T{}'.format(temp))
                     for i in np.random.choice(dataset.vocab_size, size=5):
-                        text = dataset.convert_to_string(model.predict(i, 100, temp)).replace("\n", "<br>")
+                        text = dataset.convert_to_string(model.predict([i], 100, temp)).replace("\n", "<br>")
+                        writer.log(text)
+                        writer.write('samples', text)
+                    for string in ["1:1. In the beginning God created", "1:5. And he called the light Day, and the darkness", 
+                        "7:1. And the Lord said to him:", "Genesis Chapter 7"]:
+                        text = dataset.convert_to_string(model.predict(dataset.convert_to_id(string), 100, temp)).replace("\n", "<br>")
                         writer.log(text)
                         writer.write('samples', text)
 
