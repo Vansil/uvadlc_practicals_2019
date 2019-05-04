@@ -45,7 +45,7 @@ class TextGenerationModel(nn.Module):
         self.device = device
         self.to(device)
 
-    def forward(self, x):
+    def forward(self, x, reset=True):
         # Shape x: [sequence, batch, feature]
         batch_size = x.shape[1]
 
@@ -53,8 +53,9 @@ class TextGenerationModel(nn.Module):
         emb = self.embedding(x)
 
         # Forward LSTM, update hidden and cell state
-        state_shape = [self.lstm_num_layers, batch_size, self.lstm_num_hidden]
-        self.reset_state(state_shape)
+        if reset:
+            state_shape = [self.lstm_num_layers, batch_size, self.lstm_num_hidden]
+            self.reset_state(state_shape)
         lstm_outs, (self.hidden, self.cell) = self.lstm(emb, (self.hidden, self.cell))
 
         # Forward final linear layer
@@ -79,7 +80,7 @@ class TextGenerationModel(nn.Module):
             # Add input characters
             for c in cs:
                 x = torch.LongTensor([c]).unsqueeze(0).to(self.device)
-                o = self.forward(x)
+                o = self.forward(x, reset=False)
 
             # Iteratively append next character
             for i in range(length):
@@ -93,6 +94,6 @@ class TextGenerationModel(nn.Module):
                 out.append(c)
                 # input new character
                 x = torch.LongTensor([c]).unsqueeze(0).to(self.device)
-                o = self.forward(x)
+                o = self.forward(x, reset=False)
         
         return out
