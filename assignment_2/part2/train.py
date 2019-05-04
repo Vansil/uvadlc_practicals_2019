@@ -112,7 +112,7 @@ def train(config):
             if step % config.sample_every == 0:
                 writer.log("Generating sentences")
                 writer.write('samples', 'ITER{}'.format(step))
-                for temp in [0, .05, .2, .5]:
+                for temp in [0, .5, 1, 2]:
                     writer.log("\nTemperature: {}".format(temp))
                     writer.write('samples', 'T{}'.format(temp))
                     for i in np.random.choice(dataset.vocab_size, size=5):
