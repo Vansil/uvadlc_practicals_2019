@@ -29,7 +29,7 @@ class TextGenerationModel(nn.Module):
         super(TextGenerationModel, self).__init__()
         
         # Character embedding
-        self.embedding = nn.Embedding(vocabulary_size, dim_embed)
+        self.embedding = nn.Embedding(vocabulary_size, dim_embed).to(device)
 
         # LSTM
         self.hidden = None
