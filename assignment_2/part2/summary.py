@@ -25,7 +25,7 @@ class Writer(object):
         '''
         Save model to pickle file
         '''
-        torch.save(model.cpu(), os.path.join(self.dir_check, '{:09d}.pt'.format(iter)))
+        torch.save(model, os.path.join(self.dir_check, '{:09d}.pt'.format(iter)))
         
 
     def log(self, text):
