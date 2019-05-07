@@ -116,7 +116,7 @@ def main():
 
     # You can save your generator here to re-use it to generate images for your
     # report, e.g.:
-    # torch.save(generator.state_dict(), "mnist_generator.pt")
+    torch.save(generator.state_dict(), "mnist_generator.pt")
 
 
 if __name__ == "__main__":
