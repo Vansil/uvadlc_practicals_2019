@@ -25,7 +25,7 @@ class Generator(nn.Module):
             nn.Linear(512,1024),
             nn.BatchNorm1d(1024),
             nn.LeakyReLU(.2),
-            nn.Linear(1024,768),
+            nn.Linear(1024,784),
             nn.Tanh()
         )
 
@@ -39,7 +39,7 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.model = nn.Sequential(
-            nn.Linear(768,512),
+            nn.Linear(784,512),
             nn.LeakyReLU(.2),
             nn.Linear(512,256),
             nn.LeakyReLU(.2),
@@ -69,8 +69,6 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
 
             # Train Discriminator
             # -------------------
-            print("fck")
-            print(imgs.cuda().shape)
             predictions_real = discriminator(imgs.cuda())
             loss_dis = (- predictions_real.log() - (1 - predictions_fake).log()).mean()
 
