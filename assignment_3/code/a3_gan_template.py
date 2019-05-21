@@ -29,11 +29,9 @@ class Generator(nn.Module):
             nn.Tanh()
         )
 
-        self.cuda()
-
     def forward(self, z):
         # Generate images from z
-        return self.model(z).cuda()
+        return self.model(z)
 
 
 class Discriminator(nn.Module):
@@ -49,11 +47,9 @@ class Discriminator(nn.Module):
             nn.Sigmoid()
         )
 
-        self.cuda()
-
     def forward(self, img):
         # return discriminator score for img
-        return self.model(img).cuda()
+        return self.model(img)
 
 
 def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
@@ -75,7 +71,7 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
 
             # Train Discriminator
             # -------------------
-            predictions_real = discriminator(imgs).cuda()
+            predictions_real = discriminator(imgs)
             loss_dis = (- predictions_real.log() - (1 - predictions_fake).log()).mean()
 
             optimizer_D.zero_grad()
@@ -111,7 +107,9 @@ def main():
 
     # Initialize models and optimizers
     generator = Generator()
+    generator.cuda()
     discriminator = Discriminator()
+    discriminator.cuda()
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr)
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
 
