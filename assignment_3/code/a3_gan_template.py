@@ -56,8 +56,6 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
     for epoch in range(args.n_epochs):
         for i, (imgs, _) in enumerate(dataloader):
 
-            imgs.cuda()
-
             # Train Generator
             # ---------------
             batch_noise = torch.Tensor(args.batch_size, args.latent_dim).normal_().cuda()
@@ -71,7 +69,7 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
 
             # Train Discriminator
             # -------------------
-            predictions_real = discriminator(imgs)
+            predictions_real = discriminator(imgs.cuda())
             loss_dis = (- predictions_real.log() - (1 - predictions_fake).log()).mean()
 
             optimizer_D.zero_grad()
