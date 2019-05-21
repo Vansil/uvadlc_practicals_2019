@@ -69,6 +69,8 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
 
             # Train Discriminator
             # -------------------
+            print("fck")
+            print(imgs.shape)
             predictions_real = discriminator(imgs.cuda())
             loss_dis = (- predictions_real.log() - (1 - predictions_fake).log()).mean()
 
