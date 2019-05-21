@@ -71,7 +71,7 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
             # -------------------
             print("fck")
             print(imgs.shape)
-            predictions_real = discriminator(imgs.cuda())
+            predictions_real = discriminator(imgs.view(args.batch_size,-1).cuda())
             loss_dis = (- predictions_real.log() - (1 - predictions_fake).log()).mean()
 
             optimizer_D.zero_grad()
@@ -87,7 +87,7 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
             # -----------
             batches_done = epoch * len(dataloader) + i
             if batches_done % args.save_interval == 0:
-                save_image(imgs_fake[:25],
+                save_image(imgs_fake.view(-1,1,28,28)[:25],
                            'images/{}.png'.format(batches_done),
                            nrow=5, normalize=True)
 
