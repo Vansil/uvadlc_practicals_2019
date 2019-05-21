@@ -63,7 +63,7 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
             batch_noise = torch.Tensor(args.batch_size, args.latent_dim).normal_().cuda()
             imgs_fake = generator(batch_noise)
             predictions_fake = discriminator(imgs_fake)
-            loss_gen = (1 - predictions_fake).log().mean()
+            loss_gen = (- predictions_fake).log().mean()
 
             optimizer_G.zero_grad()
             loss_gen.backward()
@@ -72,7 +72,7 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
             # Train Discriminator
             # -------------------
             predictions_real = discriminator(imgs)
-            loss_dis = - predictions_real.log().mean() - loss_gen # re-using generated images
+            loss_dis = (- predictions_real.log() - (1 - predictions_fake).log()).mean()
 
             optimizer_D.zero_grad()
             loss_dis.backward()
@@ -101,8 +101,8 @@ def main():
         datasets.MNIST('./data/mnist', train=True, download=True,
                        transform=transforms.Compose([
                            transforms.ToTensor(),
-                           transforms.Normalize((0.5, 0.5, 0.5),
-                                                (0.5, 0.5, 0.5))])),
+                           transforms.Normalize((0.5,),
+                                                (0.5,))])),
         batch_size=args.batch_size, shuffle=True)
 
     # Initialize models and optimizers
