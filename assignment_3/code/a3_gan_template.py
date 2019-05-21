@@ -29,6 +29,8 @@ class Generator(nn.Module):
             nn.Tanh()
         )
 
+        self.cuda()
+
     def forward(self, z):
         # Generate images from z
         return self.model(z)
@@ -46,6 +48,8 @@ class Discriminator(nn.Module):
             nn.Linear(256,1),
             nn.Sigmoid()
         )
+
+        self.cuda()
 
     def forward(self, img):
         # return discriminator score for img
