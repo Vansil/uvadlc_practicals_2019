@@ -41,7 +41,7 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.model = nn.Sequential(
-            nn.Linear(784,512),
+            nn.Linear(768,512),
             nn.LeakyReLU(.2),
             nn.Linear(512,256),
             nn.LeakyReLU(.2),
