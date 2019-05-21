@@ -19,7 +19,7 @@ class Generator(nn.Module):
             nn.Linear(128,256),
             nn.BatchNorm1d(256),
             nn.LeakyReLU(.2),
-            nn.Linear(265,512),
+            nn.Linear(256,512),
             nn.BatchNorm1d(512),
             nn.LeakyReLU(.2),
             nn.Linear(512,1024),
@@ -43,7 +43,7 @@ class Discriminator(nn.Module):
         self.model = nn.Sequential(
             nn.Linear(784,512),
             nn.LeakyReLU(.2),
-            nn.Linear(512,265),
+            nn.Linear(512,256),
             nn.LeakyReLU(.2),
             nn.Linear(256,1),
             nn.Sigmoid()
