@@ -75,7 +75,7 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
 
             # Train Discriminator
             # -------------------
-            predictions_real = discriminator(imgs)
+            predictions_real = discriminator(imgs).cuda()
             loss_dis = (- predictions_real.log() - (1 - predictions_fake).log()).mean()
 
             optimizer_D.zero_grad()
