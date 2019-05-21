@@ -33,7 +33,7 @@ class Generator(nn.Module):
 
     def forward(self, z):
         # Generate images from z
-        return self.model(z)
+        return self.model(z).cuda()
 
 
 class Discriminator(nn.Module):
@@ -53,7 +53,7 @@ class Discriminator(nn.Module):
 
     def forward(self, img):
         # return discriminator score for img
-        return self.model(img)
+        return self.model(img).cuda()
 
 
 def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
