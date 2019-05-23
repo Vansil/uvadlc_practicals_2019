@@ -134,3 +134,33 @@ class VaeWriter(Writer):
         plt.ylabel('ELBO')
         plt.tight_layout()
         plt.savefig(os.path.join(self.dir,'elbos.png'))
+
+
+class NfWriter(Writer):
+    def __init__(self, path_dir):
+        super(NfWriter, self).__init__(path_dir)
+
+
+    def save_stats(self, train_bpd, val_bpd):
+        self.write('stats', '{},{}'.format(train_bpd, val_bpd))
+
+    def save_bpd_plot(self):
+        train_curve = []
+        val_curve = []
+
+        with open(os.path.join(self.dir, 'stats.txt')) as f:
+            reader = csv.reader(f)
+            for row in reader:
+                train_curve.append(float(row[0]))
+                val_curve.append(float(row[1]))
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(train_curve, label='train bpd')
+        plt.plot(val_curve, label='validation bpd')
+        plt.legend()
+        plt.xlabel('epochs')
+        plt.ylabel('Bits per dimension')
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.dir,'bpd.png'))
+
+    

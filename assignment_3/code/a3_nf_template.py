@@ -8,6 +8,8 @@ import numpy as np
 from datasets.mnist import mnist
 import os
 from torchvision.utils import make_grid
+import numpy as np
+from summary import NfWriter
 
 
 def log_prior(x):
@@ -15,23 +17,22 @@ def log_prior(x):
     Compute the elementwise log probability of a standard Gaussian, i.e.
     N(x | mu=0, sigma=1).
     """
-    raise NotImplementedError
-    return logp
+    logp = -.5 * (np.log(2 * np.pi) + x.pow(2))
+    return logp.sum(dim=1)
 
 
 def sample_prior(size):
     """
     Sample from a standard Gaussian.
     """
-    raise NotImplementedError
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    if torch.cuda.is_available():
-        sample = sample.cuda()
-
+    sample = torch.randn(size).to(device)
     return sample
 
 
 def get_mask():
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     mask = np.zeros((28, 28), dtype='float32')
     for i in range(28):
         for j in range(28):
@@ -39,7 +40,7 @@ def get_mask():
                 mask[i, j] = 1
 
     mask = mask.reshape(1, 28*28)
-    mask = torch.from_numpy(mask)
+    mask = torch.from_numpy(mask).to(device)
 
     return mask
 
@@ -56,13 +57,23 @@ class Coupling(torch.nn.Module):
         # scale variables.
         # Suggestion: Linear ReLU Linear ReLU Linear.
         self.nn = torch.nn.Sequential(
-            None
+            nn.Linear(c_in, n_hidden),
+            nn.ReLU(),
+            nn.Linear(n_hidden, n_hidden),
+            nn.ReLU()
             )
+        self.fc_t = nn.Linear(n_hidden, c_in)
+        self.fc_logscale = nn.Sequential(
+            nn.Linear(n_hidden, c_in),
+            nn.Tanh()
+        )
 
         # The nn should be initialized such that the weights of the last layer
         # is zero, so that its initial transform is identity.
-        self.nn[-1].weight.data.zero_()
-        self.nn[-1].bias.data.zero_()
+        self.fc_t.weight.data.zero_()
+        self.fc_t.bias.data.zero_()
+        self.fc_logscale[0].weight.data.zero_()
+        self.fc_logscale[0].bias.data.zero_()
 
     def forward(self, z, ldj, reverse=False):
         # Implement the forward and inverse for an affine coupling layer. Split
@@ -74,10 +85,19 @@ class Coupling(torch.nn.Module):
         # log_scale = tanh(h), where h is the scale-output
         # from the NN.
 
+        # Forward
+        z_masked = self.mask * z
+        hidden = self.nn(z_masked)
+        translate = self.fc_t(hidden)
+        logscale = self.fc_logscale(hidden)
+
+        # Compute output
         if not reverse:
-            raise NotImplementedError
+            z = z_masked + (1 - self.mask) * (z * logscale.exp() + translate)
+            ldj += ((1 - self.mask) * logscale).sum(dim=1)
         else:
-            raise NotImplementedError
+            z = z_masked + (1 - self.mask) * (z - translate) * (-logscale).exp()
+            ldj = torch.zeros_like(ldj) # not used in reverse pass
 
         return z, ldj
 
@@ -148,7 +168,7 @@ class Model(nn.Module):
         Given input, encode the input to z space. Also keep track of ldj.
         """
         z = input
-        ldj = torch.zeros(z.size(0), device=z.device)
+        ldj = torch.zeros(z.size(0)).to(z.device)
 
         z = self.dequantize(z)
         z, ldj = self.logit_normalize(z, ldj)
@@ -156,8 +176,9 @@ class Model(nn.Module):
         z, ldj = self.flow(z, ldj)
 
         # Compute log_pz and log_px per example
+        log_pz = log_prior(z)
 
-        raise NotImplementedError
+        log_px = ldj + log_pz
 
         return log_px
 
@@ -167,14 +188,14 @@ class Model(nn.Module):
         Then invert the flow and invert the logit_normalize.
         """
         z = sample_prior((n_samples,) + self.flow.z_shape)
-        ldj = torch.zeros(z.size(0), device=z.device)
+        ldj = torch.zeros(z.size(0)).to(z.device)
 
-        raise NotImplementedError
+        z, _ = self.flow(z, ldj, reverse=True)
 
         return z
 
 
-def epoch_iter(model, data, optimizer):
+def epoch_iter(model, dataloader, optimizer):
     """
     Perform a single epoch for either the training or validation.
     use model.training to determine if in 'training mode' or not.
@@ -183,7 +204,25 @@ def epoch_iter(model, data, optimizer):
     log_2 likelihood per dimension) averaged over the complete epoch.
     """
 
-    avg_bpd = None
+    nlls = []
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+    for _, batch in enumerate(dataloader):
+        batch = batch[0].to(device)
+
+        # Evaluate NLL
+        NLL = - model(batch).mean()
+
+        if model.training:
+            # gradient update
+            model.zero_grad()
+            NLL.backward()
+            optimizer.step()
+
+        nlls.append(NLL.item() * len(batch))
+
+    # average bpds
+    avg_bpd = sum(nlls) / len(dataloader.dataset) * np.log(2)
 
     return avg_bpd
 
@@ -215,6 +254,7 @@ def save_bpd_plot(train_curve, val_curve, filename):
 
 
 def main():
+    writer = NfWriter(ARGS.output_dir)
     data = mnist()[:2]  # ignore test split
 
     model = Model(shape=[784])
@@ -235,19 +275,16 @@ def main():
         print("[Epoch {epoch}] train bpd: {train_bpd} val_bpd: {val_bpd}".format(
             epoch=epoch, train_bpd=train_bpd, val_bpd=val_bpd))
 
-        # --------------------------------------------------------------------
-        #  Add functionality to plot samples from model during training.
-        #  You can use the make_grid functionality that is already imported.
-        #  Save grid to images_nfs/
-        # --------------------------------------------------------------------
-
-    save_bpd_plot(train_curve, val_curve, 'nfs_bpd.pdf')
+        writer.save_stats(train_bpd, val_bpd)
+        writer.save_bpd_plot()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--epochs', default=40, type=int,
                         help='max number of epochs')
+    parser.add_argument('--output_dir', type=str, default=os.path.join('output','nf','run'),
+                        help='directory to which to output')
 
     ARGS = parser.parse_args()
 
