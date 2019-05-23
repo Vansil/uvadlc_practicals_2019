@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 from torchvision.utils import save_image
 import csv
 from matplotlib import pyplot as plt
+from torchvision.utils import make_grid
 
 
 class Writer(object):
@@ -93,12 +94,12 @@ class VaeWriter(Writer):
         self.dir_imgs = os.path.join(self.dir, 'images')
         os.makedirs(self.dir_imgs, exist_ok=True)
 
-    def save_images(self, images, iteration):
+    def save_images(self, images, epoch):
         '''
         Saves image of first 25 images
         '''
         save_image(images.view(-1,1,28,28)[:25],
-            os.path.join(self.dir_imgs,'{}.png'.format(iteration)),
+            os.path.join(self.dir_imgs,'{}.png'.format(epoch)),
             nrow=5, normalize=True)
             
     def save_state_dict(self, model, filename):
@@ -106,6 +107,14 @@ class VaeWriter(Writer):
 
     def save_stats(self, train_elbo, val_elbo):
         self.write('stats', '{},{}'.format(train_elbo, val_elbo))
+
+    def save_images(self, images, iteration):
+        '''
+        Saves image of first 25 images
+        '''
+        save_image(images.view(-1,1,28,28)[:25],
+            os.path.join(self.dir_imgs,'{}.png'.format(iteration)),
+            nrow=5, normalize=True)
 
     def save_elbo_plot(self):
         train_curve = []
