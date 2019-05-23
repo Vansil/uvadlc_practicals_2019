@@ -109,7 +109,7 @@ class VAE(nn.Module):
         im_means = self.decoder(epsilon)
         
         # Sample one image from each means vector
-        side_len = np.sqrt(im_means.shape[1]) # assuming square images
+        side_len = float(np.sqrt(im_means.shape[1])) # assuming square images
         sampled_ims = im_means.bernoulli().view(-1,1,side_len,side_len)
 
         return sampled_ims, im_means
