@@ -184,7 +184,7 @@ def main():
             eps = 1e-9
             zs = np.linspace(0 + eps, 1 - eps, side_len)
             samples = torch.stack([torch.Tensor(ndtri([x, y])) for x in zs for y in zs])
-            _, manifold = model.decoder(samples.to(device))
+            manifold = model.decoder(samples.to(device)).view(-1,1,side_len,side_len)
             writer.save_manifold(manifold, epoch)
 
 if __name__ == "__main__":
