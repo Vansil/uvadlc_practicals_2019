@@ -170,7 +170,7 @@ def main():
     for epoch in range(ARGS.epochs):
         elbos = run_epoch(model, data, optimizer)
         train_elbo, val_elbo = elbos
-        writer.save_stats(train_elmo, val_elmo)
+        writer.save_stats(train_elbo, val_elbo)
         writer.log(f"[Epoch {epoch}] train elbo: {train_elbo} val_elbo: {val_elbo}")
         writer.save_elbo_plot()
 
