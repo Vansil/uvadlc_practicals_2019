@@ -6,6 +6,7 @@ import torch.nn as nn
 import matplotlib.pyplot as plt
 from torchvision.utils import make_grid
 import numpy as np
+from scipy.special import ndtri
 
 from datasets.bmnist import bmnist
 from summary import VaeWriter
@@ -170,18 +171,21 @@ def main():
         elbos = run_epoch(model, data, optimizer)
         train_elbo, val_elbo = elbos
 
+        # Output stats and images
         writer.save_stats(train_elbo, val_elbo)
         writer.log(f"[Epoch {epoch}] train elbo: {train_elbo} val_elbo: {val_elbo}")
         writer.save_elbo_plot()
         sample_imgs, _ = model.sample(25)
         writer.save_images(sample_imgs, epoch)
 
-    # --------------------------------------------------------------------
-    #  Add functionality to plot plot the learned data manifold after
-    #  if required (i.e., if zdim == 2). You can use the make_grid
-    #  functionality that is already imported.
-    # --------------------------------------------------------------------
-
+        # Print manifold
+        if ARGS.zdim ==2:
+            side_len = 20
+            eps = 1e-9
+            zs = np.linspace(0 + eps, 1 - eps, side_len)
+            samples = torch.stack([torch.Tensor(ndtri([x, y])) for x in zs for y in zs])
+            _, manifold = model.decoder(samples).view(-1,1,side_len,side_len)
+            writer.save_manifold(manifold, epoch)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
