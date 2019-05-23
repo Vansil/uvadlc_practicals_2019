@@ -79,7 +79,7 @@ class VAE(nn.Module):
         var = logvar.exp()
         std = var.sqrt()
         # Sample
-        epsilon = torch.Tensor(self.z_dim, device=self.device).normal_()
+        epsilon = torch.Tensor(self.z_dim).to(self.device).normal_()
         encoding = mean + torch.einsum('d,nd->nd', epsilon, std)
         # Decode
         decoded = self.decoder(encoding)
@@ -104,7 +104,7 @@ class VAE(nn.Module):
         """
 
         # Sample from normal distribution
-        epsilon = torch.Tensor(n_samples, self.z_dim, device=self.device).normal_()
+        epsilon = torch.Tensor(n_samples, self.z_dim).to(self.device).normal_()
         # Decode
         im_means = self.decoder(epsilon)
         
