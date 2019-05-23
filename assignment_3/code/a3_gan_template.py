@@ -7,6 +7,8 @@ import torchvision.transforms as transforms
 from torchvision.utils import save_image
 from torchvision import datasets
 
+from summary import GanWriter
+
 
 class Generator(nn.Module):
     # TODO: momentum 0.8 as in tutorial?
@@ -14,7 +16,7 @@ class Generator(nn.Module):
         super(Generator, self).__init__()
 
         self.model = nn.Sequential(
-            nn.Linear(args.latent_dim, 128),
+            nn.Linear(args.latent_dim if 'args' in globals() else 100, 128),
             nn.LeakyReLU(.2),
             nn.Linear(128,256),
             nn.BatchNorm1d(256),
@@ -52,48 +54,77 @@ class Discriminator(nn.Module):
         return self.model(img)
 
 
-def train(dataloader, discriminator, generator, optimizer_G, optimizer_D):
+def train(dataloader, discriminator, generator, optimizer_G, optimizer_D, writer):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    writer.log('Device: ' + device)
+
+    # Binary Cross-entropy Loss
+    criterion = nn.BCELoss()
+
     for epoch in range(args.n_epochs):
         for i, (imgs, _) in enumerate(dataloader):
+            batch_size = imgs.shape[0]
 
             # Train Generator
             # ---------------
-            batch_noise = torch.Tensor(args.batch_size, args.latent_dim).normal_().cuda()
+            generator.zero_grad()
+
+            # inference
+            batch_noise = torch.Tensor(batch_size, args.latent_dim, 
+                device=device).normal_()
             imgs_fake = generator(batch_noise)
             predictions_fake = discriminator(imgs_fake)
-            loss_gen = (- predictions_fake).log().mean()
 
-            optimizer_G.zero_grad()
+            # loss
+            # loss_gen = (- predictions_fake).log().mean()
+            label = torch.full((batch_size,), 1, device=device)
+            loss_gen = criterion(predictions_fake, label)
             loss_gen.backward()
+
+            # gradient update
             optimizer_G.step()
 
             # Train Discriminator
             # -------------------
-            predictions_real = discriminator(imgs.view(imgs.shape[0],-1).cuda())
-            predictions_fake = discriminator(imgs_fake.detach())
-            loss_dis = - predictions_real.log().mean() - (1 - predictions_fake).log().mean()
+            discriminator.zero_grad()
 
-            optimizer_D.zero_grad()
-            loss_dis.backward()
+            # inference
+            predictions_real = discriminator(imgs.view(imgs.shape[0],-1).to(device))
+            predictions_fake = discriminator(imgs_fake.detach())
+
+            # loss
+            label.fill_(1)
+            loss_dis_real = criterion(predictions_real, label)
+            loss_dis_real.backward()
+            label.fill_(0)
+            loss_dis_fake = criterion(predictions_fake, label)
+            loss_dis_fake.backward()
+            loss_dis = loss_dis_real + loss_dis_fake
+            # loss_dis = - predictions_real.log().mean() - (1 - predictions_fake).log().mean()
+
+            # gradient update
             optimizer_D.step()
 
             # Print metrics
             if i % 50 == 0:
-                print("Epoch {}   Step {}   Loss generator: {:02.3f}   Loss discriminator: {:02.3f}".format(
+                writer.log("Epoch {}   Step {}   Loss generator: {:02.3f}   Loss discriminator: {:02.3f}".format(
                     epoch, i, loss_gen, loss_dis))
 
-            # Save Images
+            # Save Images and stats
             # -----------
+            writer.save_stats(loss_gen, loss_dis)
             batches_done = epoch * len(dataloader) + i
             if batches_done % args.save_interval == 0:
-                save_image(imgs_fake.view(-1,1,28,28)[:25],
-                           'images/{}.png'.format(batches_done),
-                           nrow=5, normalize=True)
+                writer.save_images(imgs_fake, batches_done)
+                writer.make_stats_plot()
+                writer.save_state_dict(generator, "mnist_generator_{}.pt".format(batches_done))
 
 
 def main():
     # Create output image directory
-    os.makedirs('images', exist_ok=True)
+    writer = GanWriter(args.output_dir)
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # load data
     dataloader = torch.utils.data.DataLoader(
@@ -106,18 +137,18 @@ def main():
 
     # Initialize models and optimizers
     generator = Generator()
-    generator.cuda()
+    generator.to(device)
     discriminator = Discriminator()
-    discriminator.cuda()
+    discriminator.to(device)
     optimizer_G = torch.optim.Adam(generator.parameters(), lr=args.lr)
     optimizer_D = torch.optim.Adam(discriminator.parameters(), lr=args.lr)
 
     # Start training
-    train(dataloader, discriminator, generator, optimizer_G, optimizer_D)
+    train(dataloader, discriminator, generator, optimizer_G, optimizer_D, writer)
 
     # You can save your generator here to re-use it to generate images for your
-    # report, e.g.:
-    torch.save(generator.state_dict(), "mnist_generator.pt")
+    # report
+    writer.save_state_dict(generator, "mnist_generator_final.pt")
 
 
 if __name__ == "__main__":
@@ -132,6 +163,8 @@ if __name__ == "__main__":
                         help='dimensionality of the latent space')
     parser.add_argument('--save_interval', type=int, default=500,
                         help='save every SAVE_INTERVAL iterations')
+    parser.add_argument('--output_dir', type=str, default=os.path.join('output','gan','run'),
+                        help='directory to which to output')
     args = parser.parse_args()
 
     main()
