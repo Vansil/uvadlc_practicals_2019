@@ -1,0 +1,57 @@
+Device: cuda
+Model:
+VAE(
+  (encoder): Encoder(
+    (fc_hidden): Linear(in_features=784, out_features=500, bias=True)
+    (fc_mean): Linear(in_features=500, out_features=20, bias=True)
+    (fc_logvar): Linear(in_features=500, out_features=20, bias=True)
+  )
+  (decoder): Decoder(
+    (net): Sequential(
+      (0): Linear(in_features=20, out_features=500, bias=True)
+      (1): Tanh()
+      (2): Linear(in_features=500, out_features=784, bias=True)
+      (3): Sigmoid()
+    )
+  )
+)
+[Epoch 0] train elbo: 190.082275390625 val_elbo: 155.65013122558594
+[Epoch 1] train elbo: 143.3428192138672 val_elbo: 138.1852264404297
+[Epoch 2] train elbo: 133.05206298828125 val_elbo: 129.40695190429688
+[Epoch 3] train elbo: 128.88803100585938 val_elbo: 126.44970703125
+[Epoch 4] train elbo: 125.96503448486328 val_elbo: 124.74659729003906
+[Epoch 5] train elbo: 124.29000854492188 val_elbo: 123.23375701904297
+[Epoch 6] train elbo: 122.06998443603516 val_elbo: 121.92428588867188
+[Epoch 7] train elbo: 120.72842407226562 val_elbo: 118.69242095947266
+[Epoch 8] train elbo: 119.11201477050781 val_elbo: 119.8548812866211
+[Epoch 9] train elbo: 117.95133972167969 val_elbo: 119.06238555908203
+[Epoch 10] train elbo: 116.92440032958984 val_elbo: 115.5490493774414
+[Epoch 11] train elbo: 115.87035369873047 val_elbo: 117.09677124023438
+[Epoch 12] train elbo: 114.95634460449219 val_elbo: 115.6396713256836
+[Epoch 13] train elbo: 113.92979431152344 val_elbo: 115.80220794677734
+[Epoch 14] train elbo: 113.66410827636719 val_elbo: 113.65799713134766
+[Epoch 15] train elbo: 113.29438018798828 val_elbo: 112.29570007324219
+[Epoch 16] train elbo: 111.85569763183594 val_elbo: 114.40058135986328
+[Epoch 17] train elbo: 111.38914489746094 val_elbo: 111.0486068725586
+[Epoch 18] train elbo: 111.13507843017578 val_elbo: 112.61822509765625
+[Epoch 19] train elbo: 110.56892395019531 val_elbo: 110.89315795898438
+[Epoch 20] train elbo: 110.12664031982422 val_elbo: 112.07640075683594
+[Epoch 21] train elbo: 110.27163696289062 val_elbo: 109.52892303466797
+[Epoch 22] train elbo: 109.71427917480469 val_elbo: 111.991943359375
+[Epoch 23] train elbo: 109.0669937133789 val_elbo: 110.8213119506836
+[Epoch 24] train elbo: 108.87201690673828 val_elbo: 109.05912017822266
+[Epoch 25] train elbo: 108.45182037353516 val_elbo: 111.38951110839844
+[Epoch 26] train elbo: 107.97847747802734 val_elbo: 110.08196258544922
+[Epoch 27] train elbo: 107.81527709960938 val_elbo: 109.20308685302734
+[Epoch 28] train elbo: 107.24627685546875 val_elbo: 107.92608642578125
+[Epoch 29] train elbo: 107.11465454101562 val_elbo: 108.03607177734375
+[Epoch 30] train elbo: 107.22342681884766 val_elbo: 109.32903289794922
+[Epoch 31] train elbo: 106.64908599853516 val_elbo: 108.39069366455078
+[Epoch 32] train elbo: 106.41814422607422 val_elbo: 108.54118347167969
+[Epoch 33] train elbo: 106.40935516357422 val_elbo: 108.55943298339844
+[Epoch 34] train elbo: 105.85099029541016 val_elbo: 108.02001953125
+[Epoch 35] train elbo: 106.0163803100586 val_elbo: 108.47578430175781
+[Epoch 36] train elbo: 106.22364807128906 val_elbo: 108.47339630126953
+[Epoch 37] train elbo: 105.754638671875 val_elbo: 107.80924987792969
+[Epoch 38] train elbo: 105.5894546508789 val_elbo: 107.95150756835938
+[Epoch 39] train elbo: 105.29428100585938 val_elbo: 107.3578109741211
