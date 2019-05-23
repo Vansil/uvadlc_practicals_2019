@@ -122,11 +122,12 @@ def epoch_iter(model, dataloader, optimizer):
 
     Returns the average elbo for the complete epoch.
     """
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     epoch_losses = [] # total loss for each batch
     for batch in dataloader:
         # Evaluate negative ELBo
-        loss = model(batch)
+        loss = model(batch.to(device))
         epoch_losses.append(loss * len(batch))
 
         if model.training:
