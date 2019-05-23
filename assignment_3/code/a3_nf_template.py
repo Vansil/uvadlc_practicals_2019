@@ -278,6 +278,9 @@ def main():
         writer.save_stats(train_bpd, val_bpd)
         writer.save_bpd_plot()
 
+        imgs_gen = model.sample(25).detach().reshape(25, 1, 28, 28).cpu()
+        writer.save_images(imgs_gen, epoch)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

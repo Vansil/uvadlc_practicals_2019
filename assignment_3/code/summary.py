@@ -139,6 +139,8 @@ class VaeWriter(Writer):
 class NfWriter(Writer):
     def __init__(self, path_dir):
         super(NfWriter, self).__init__(path_dir)
+        self.dir_imgs = os.path.join(self.dir, 'images')
+        os.makedirs(self.dir_imgs, exist_ok=True)
 
 
     def save_stats(self, train_bpd, val_bpd):
@@ -163,4 +165,10 @@ class NfWriter(Writer):
         plt.tight_layout()
         plt.savefig(os.path.join(self.dir,'bpd.png'))
 
-    
+    def save_images(self, images, epoch):
+        '''
+        Saves image of first 25 images
+        '''
+        save_image(images.view(-1,1,28,28)[:25],
+            os.path.join(self.dir_imgs,'{}.png'.format(epoch)),
+            nrow=5, normalize=True)
