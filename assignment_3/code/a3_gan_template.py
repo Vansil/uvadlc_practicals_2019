@@ -70,14 +70,13 @@ def train(dataloader, discriminator, generator, optimizer_G, optimizer_D, writer
             generator.zero_grad()
 
             # inference
-            batch_noise = torch.Tensor(batch_size, args.latent_dim, 
-                device=device).normal_()
+            batch_noise = torch.Tensor(batch_size, args.latent_dim).to(device).normal_()
             imgs_fake = generator(batch_noise)
             predictions_fake = discriminator(imgs_fake)
 
             # loss
             # loss_gen = (- predictions_fake).log().mean()
-            label = torch.full((batch_size,), 1, device=device)
+            label = torch.full((batch_size,), 1).to(device)
             loss_gen = criterion(predictions_fake, label)
             loss_gen.backward()
 
