@@ -166,7 +166,6 @@ def main():
     optimizer = torch.optim.Adam(model.parameters())
     writer.log("Model:\n" + str(model))
 
-    train_curve, val_curve = [], []
     for epoch in range(ARGS.epochs):
         elbos = run_epoch(model, data, optimizer)
         train_elbo, val_elbo = elbos

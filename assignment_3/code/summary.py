@@ -104,5 +104,24 @@ class VaeWriter(Writer):
     def save_state_dict(self, model, filename):
         torch.save(model.state_dict(), os.path.join(self.dir_check, filename))
 
-    def save_stats(self, gen_loss, dis_loss):
-        self.write('stats', '{},{}'.format(gen_loss, dis_loss))
+    def save_stats(self, train_elbo, val_elbo):
+        self.write('stats', '{},{}'.format(train_elbo, val_elbo))
+
+    def save_elbo_plot(self):
+        train_curve = []
+        val_curve = []
+
+        with open(os.path.join(self.dir, 'stats.txt')) as f:
+            reader = csv.reader(f)
+            for row in reader:
+                train_curve.append(float(row[0]))
+                val_curve.append(float(row[1]))
+
+        plt.figure(figsize=(12, 6))
+        plt.plot(train_curve, label='train elbo')
+        plt.plot(val_curve, label='validation elbo')
+        plt.legend()
+        plt.xlabel('epochs')
+        plt.ylabel('ELBO')
+        plt.tight_layout()
+        plt.savefig(os.path.join(self.dir,'elbos.png'))
